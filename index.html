@@ -311,18 +311,29 @@ textarea{min-height:70px;resize:vertical}
       <!-- STUDENT MGMT -->
       <div class="subcard" id="sub-student">
         <div class="card">
+          <div class="ct"><span><span class="dot"></span>匯入名冊（CSV）</span></div>
+          <p style="font-size:11.5px;color:var(--t2);margin-bottom:10px">欄位需求（表頭需一致）：學校,學制,組別,單位,學號,姓名,指導老師,實習(起),實習(迄)　——同一梯次的學校/學制/組別/指導老師/起訖日期可以只填第一列，下面留空會自動延用上一列。</p>
+          <input type="file" id="importCsvFile" accept=".csv" onchange="handleImportCsv(event)">
+          <div id="importResult" style="margin-top:8px;font-size:12px"></div>
+        </div>
+        <div class="card">
           <div class="ct"><span><span class="dot"></span>新建學生</span></div>
           <div class="g2">
             <div class="fg"><label>學校<span style="color:var(--danger)">*</span></label><select id="s-school"></select></div>
             <div class="fg"><label>學生姓名<span style="color:var(--danger)">*</span></label><input id="s-name" placeholder="例：李品妍"></div>
+            <div class="fg"><label>學號</label><input id="s-no" placeholder="例：111510258"></div>
             <div class="fg"><label>學制<span style="color:var(--danger)">*</span></label>
               <select id="s-system"><option>五專</option><option>二技(日)</option><option>四技</option><option>大學</option><option>學士後護理</option><option>高齡</option></select>
             </div>
-            <div class="fg"><label>年級<span style="color:var(--danger)">*</span></label>
-              <select id="s-grade"><option>一年級</option><option>二年級</option><option>三年級</option><option>四年級</option><option>五年級</option></select>
+            <div class="fg"><label>年級</label>
+              <select id="s-grade"><option>一年級</option><option>二年級</option><option>三年級</option><option>四年級</option><option>五年級</option><option value="">（不指定）</option></select>
             </div>
             <div class="fg"><label>實習科目 / Phase<span style="color:var(--danger)">*</span></label><select id="s-subject" onchange="previewAutoForms()"></select></div>
-            <div class="fg"><label>負責老師</label><select id="s-teacher"><option value="">— 依學校/科目自動配對 —</option></select></div>
+            <div class="fg"><label>實習病房 / 單位</label><input id="s-ward" placeholder="例：7C骨科病房"></div>
+            <div class="fg"><label>負責老師（系統帳號）</label><select id="s-teacher"><option value="">— 依學校/科目自動配對 —</option></select></div>
+            <div class="fg"><label>指導老師（僅顯示用，不需開帳號）</label><input id="s-mentorname" placeholder="例：吳珮甄"></div>
+            <div class="fg"><label>實習期間（起）</label><input id="s-start" type="date"></div>
+            <div class="fg"><label>實習期間（迄）</label><input id="s-end" type="date"></div>
           </div>
           <div class="al ai" id="autoFormsPreview">系統將依實習科目自動帶出應評核的 DOPS / Mini-CEX / EPA 項目。</div>
           <button class="btn pri" onclick="submitStudent()">＋ 新建學生</button>
@@ -330,11 +341,12 @@ textarea{min-height:70px;resize:vertical}
         <div class="card">
           <div class="ct"><span><span class="dot"></span>學生名單</span></div>
           <table>
-            <thead><tr><th>姓名</th><th>學校</th><th>學制 / 年級</th><th>實習科目</th><th>負責老師</th><th></th></tr></thead>
+            <thead><tr><th>學號</th><th>姓名</th><th>學校</th><th>學制 / 年級</th><th>實習科目</th><th>病房</th><th>指導老師</th><th></th></tr></thead>
             <tbody id="studentAdminTbl"></tbody>
           </table>
         </div>
       </div>
+
 
       <!-- SCHOOL MGMT -->
       <div class="subcard" id="sub-school">
@@ -400,6 +412,20 @@ const PHASES = {
   '社區': 'Phase6 社區',
   '綜合實習': 'Phase7 綜合實習',
 };
+// 匯入名冊時，把常見的科別/組別寫法對應到系統內部的實習科目 key
+const UNIT_ALIAS = {
+  '基護':'基本護理', '基本護理':'基本護理',
+  '內外科':'內外科', '內科':'內外科', '外科':'內外科',
+  '產科':'產科', '婦產科':'產科',
+  '兒科':'兒科', '兒科病房':'兒科',
+  '精神科':'精神科',
+  '社區':'社區', '社區護理':'社區',
+  '綜合實習':'綜合實習', '綜合_選習':'綜合實習', '綜合選習':'綜合實習', '選習':'綜合實習',
+};
+function normalizeUnit(raw){
+  const t = (raw||'').trim();
+  return UNIT_ALIAS[t] || t;
+}
 
 const RUBRIC = [
   {lv:'l1',label:'Level1 需完全指導',desc:'完全無法獨立執行，需帶教老師全程協助與指導。'},
@@ -688,15 +714,20 @@ function fillTeacherOptionsForStudent(){
 async function submitStudent(){
   const school = document.getElementById('s-school').value;
   const name = document.getElementById('s-name').value.trim();
+  const no = document.getElementById('s-no').value.trim();
   const system = document.getElementById('s-system').value;
   const grade = document.getElementById('s-grade').value;
   const unit = document.getElementById('s-subject').value;
+  const ward = document.getElementById('s-ward').value.trim();
+  const mentorName = document.getElementById('s-mentorname').value.trim();
+  const start = document.getElementById('s-start').value;
+  const end = document.getElementById('s-end').value;
   let teacherId = document.getElementById('s-teacher').value;
-  if(!school||!name||!system||!grade||!unit){ alert('請完整填寫學校、姓名、學制、年級、實習科目'); return; }
+  if(!school||!name||!system||!unit){ alert('請至少填寫學校、姓名、學制、實習科目'); return; }
   if(!teacherId) teacherId = autoMatchTeacher(school, unit);
-  DB.students.push({id:'s'+Date.now(), name, school, level:system+' / '+grade, unit, cohort:(document.getElementById('cohortSel').value||COHORTS[0]), teacherId});
+  DB.students.push({id:'s'+Date.now()+Math.random().toString(36).slice(2,6), name, no, school, level:system+(grade?' / '+grade:''), unit, ward, mentorName, periodStart:start, periodEnd:end, cohort:(document.getElementById('cohortSel').value||COHORTS[0]), teacherId});
   await persist();
-  document.getElementById('s-name').value='';
+  ['s-name','s-no','s-ward','s-mentorname','s-start','s-end'].forEach(id=>document.getElementById(id).value='');
   renderStudentAdminTbl(); renderStudents(); renderDashboard();
 }
 async function delStudent(id){
@@ -710,10 +741,11 @@ function renderStudentAdminTbl(){
   fillTeacherOptionsForStudent();
   const students = getAllStudents();
   document.getElementById('studentAdminTbl').innerHTML = students.length ? students.map(s=>
-    '<tr><td>'+s.name+'</td><td>'+(s.school||'—')+'</td><td>'+s.level+'</td><td>'+(PHASES[s.unit]||s.unit)+'</td>'+
-    '<td>'+(s.teacherId? teacherName(s.teacherId) : '<span style="color:var(--t3)">未配對</span>')+'</td>'+
+    '<tr><td>'+(s.no||'—')+'</td><td>'+s.name+'</td><td>'+(s.school||'—')+'</td><td>'+s.level+'</td><td>'+(PHASES[s.unit]||s.unit)+'</td>'+
+    '<td style="font-size:11px;color:var(--t2)">'+(s.ward||'—')+'</td>'+
+    '<td>'+(s.mentorName || (s.teacherId? teacherName(s.teacherId) : '<span style="color:var(--t3)">未配對</span>'))+'</td>'+
     '<td><button class="btn sm" onclick="delStudent(\''+s.id+'\')">刪除</button></td></tr>'
-  ).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--t3);padding:14px">尚無學生資料</td></tr>';
+  ).join('') : '<tr><td colspan="8" style="text-align:center;color:var(--t3);padding:14px">尚無學生資料</td></tr>';
 }
 
 /* ---------- SCHOOL MGMT ---------- */
@@ -976,6 +1008,75 @@ function renderAnalytics(){
   document.getElementById('anlLevelDist').innerHTML = Object.keys(levelCounts).map(k=>bar('Level '+k, levelCounts[k], maxLv, lvColors[k])).join('');
 }
 
+/* ---------- STUDENT ROSTER IMPORT (CSV, with forward-fill for merged-cell style sheets) ---------- */
+function parseCsvSimple(text){
+  // minimal CSV parser (handles quoted fields with commas)
+  const rows = [];
+  let row = [], field = '', inQuotes = false;
+  for(let i=0;i<text.length;i++){
+    const c = text[i];
+    if(inQuotes){
+      if(c === '"'){
+        if(text[i+1] === '"'){ field+='"'; i++; } else inQuotes = false;
+      } else field += c;
+    } else {
+      if(c === '"') inQuotes = true;
+      else if(c === ','){ row.push(field); field=''; }
+      else if(c === '\n'){ row.push(field); rows.push(row); row=[]; field=''; }
+      else if(c === '\r'){ /* skip */ }
+      else field += c;
+    }
+  }
+  if(field.length || row.length){ row.push(field); rows.push(row); }
+  return rows.filter(r=>r.some(c=>c && c.trim()!==''));
+}
+const FORWARD_FILL_COLS = ['來函文號','創稿文號','實習合約','實習(起)','實習(迄)','指導老師','學校','學制','組別'];
+async function handleImportCsv(evt){
+  const file = evt.target.files[0];
+  if(!file) return;
+  const text = await file.text();
+  const rows = parseCsvSimple(text);
+  if(rows.length < 2){ document.getElementById('importResult').innerHTML = '<span style="color:var(--danger)">找不到資料列</span>'; return; }
+  const headers = rows[0].map(h=>h.trim());
+  const idx = (name)=>headers.indexOf(name);
+  const last = {}; // carries forward group-level columns
+  let added = 0, skipped = 0;
+  for(let r=1;r<rows.length;r++){
+    const cells = rows[r];
+    const get = (name)=>{ const i = idx(name); return i>=0 ? (cells[i]||'').trim() : ''; };
+    FORWARD_FILL_COLS.forEach(col=>{
+      const v = get(col);
+      if(v) last[col] = v;
+    });
+    const name = get('姓名');
+    if(!name){ continue; }
+    const school = get('學校') || last['學校'] || '';
+    const system = get('學制') || last['學制'] || '';
+    const unitRaw = get('組別') || last['組別'] || '';
+    const unit = normalizeUnit(unitRaw);
+    const mentorName = get('指導老師') || last['指導老師'] || '';
+    const start = get('實習(起)') || last['實習(起)'] || '';
+    const end = get('實習(迄)') || last['實習(迄)'] || '';
+    const ward = get('單位');
+    const no = get('學號');
+    if(!school || !unit){ skipped++; continue; }
+    if(school && !DB.schools.includes(school)) DB.schools.push(school);
+    DB.students.push({
+      id:'s'+Date.now()+Math.random().toString(36).slice(2,6),
+      name, no, school, level: system, unit, ward, mentorName,
+      periodStart: start, periodEnd: end,
+      cohort: (document.getElementById('cohortSel').value||COHORTS[0]),
+      teacherId: autoMatchTeacher(school, unit),
+    });
+    added++;
+  }
+  await persist();
+  fillSchoolSelects(); populateViewSchoolSel();
+  renderStudentAdminTbl(); renderStudents(); renderDashboard();
+  document.getElementById('importResult').innerHTML = '<span style="color:var(--acc)">✅ 已匯入 '+added+' 位學生'+(skipped?'，略過 '+skipped+' 列（缺學校或組別）':'')+'</span>';
+  evt.target.value = '';
+}
+
 /* ---------- DATA EXPORT ---------- */
 function todayStr(){ return new Date().toISOString().slice(0,10); }
 function csvEscape(v){
@@ -992,8 +1093,8 @@ function downloadCsv(filename, rows){
   a.click();
 }
 function exportStudentsCsv(){
-  const rows = [['姓名','學校','學制/年級','實習科目','梯次','負責老師']];
-  getAllStudents().forEach(s=>rows.push([s.name, s.school, s.level, PHASES[s.unit]||s.unit, s.cohort, s.teacherId?teacherName(s.teacherId):'']));
+  const rows = [['學號','姓名','學校','學制/年級','實習科目','病房','指導老師','梯次']];
+  getAllStudents().forEach(s=>rows.push([s.no||'', s.name, s.school, s.level, PHASES[s.unit]||s.unit, s.ward||'', s.mentorName||(s.teacherId?teacherName(s.teacherId):''), s.cohort]));
   downloadCsv('學生名冊_'+todayStr()+'.csv', rows);
 }
 function exportAssessCsv(){
