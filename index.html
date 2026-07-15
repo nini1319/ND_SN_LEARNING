@@ -680,19 +680,37 @@ async function submitTeacher(){
   const email = document.getElementById('t-email').value.trim();
   const start = document.getElementById('t-start').value;
   const end = document.getElementById('t-end').value;
-  const studentIds = Array.from(document.getElementById('t-students').selectedOptions).map(o=>o.value);
+  const manualIds = Array.from(document.getElementById('t-students').selectedOptions).map(o=>o.value);
   if(!school||!subject||!name||!email){ alert('請填寫學校、負責科目、姓名與 Email'); return; }
-  DB.teachers.push({id:'t'+Date.now(), school, subject, name, email, periodStart:start, periodEnd:end, studentIds});
+  const newTeacherId = 't'+Date.now();
+
+  // 自動連動：把之前用「指導老師」文字匯入、姓名與學校都相符、還沒配對帳號的學生，自動連到這位新老師
+  const autoLinked = [];
+  DB.students.forEach(s=>{
+    const nameMatches = s.mentorName && s.mentorName.trim() === name;
+    const schoolMatches = !s.school || s.school === school;
+    if(nameMatches && schoolMatches && !s.teacherId){
+      s.teacherId = newTeacherId;
+      autoLinked.push(s.id);
+    }
+  });
+  const studentIds = Array.from(new Set([...manualIds, ...autoLinked]));
+
+  DB.teachers.push({id:newTeacherId, school, subject, name, email, periodStart:start, periodEnd:end, studentIds});
   await persist();
   document.getElementById('t-name').value=''; document.getElementById('t-email').value='';
   document.getElementById('t-start').value=''; document.getElementById('t-end').value='';
-  renderTeacherTbl(); initAttSel();
+  renderTeacherTbl(); initAttSel(); renderStudentAdminTbl(); renderStudents(); renderDashboard();
+  if(autoLinked.length){
+    alert('已自動連動 '+autoLinked.length+' 位「指導老師：'+name+'」的既有學生到這個新老師帳號。');
+  }
 }
 async function delTeacher(id){
-  if(!confirm('確定刪除此老師？')) return;
+  if(!confirm('確定刪除此老師？（已連動的學生會變回未配對，不會被刪除）')) return;
   DB.teachers = DB.teachers.filter(t=>t.id!==id);
+  DB.students.forEach(s=>{ if(s.teacherId===id) s.teacherId=''; });
   await persist();
-  renderTeacherTbl(); initAttSel();
+  renderTeacherTbl(); initAttSel(); renderStudentAdminTbl(); renderStudents(); renderDashboard();
 }
 function renderTeacherTbl(){
   const sel = document.getElementById('t-students');
@@ -743,7 +761,7 @@ function renderStudentAdminTbl(){
   document.getElementById('studentAdminTbl').innerHTML = students.length ? students.map(s=>
     '<tr><td>'+(s.no||'—')+'</td><td>'+s.name+'</td><td>'+(s.school||'—')+'</td><td>'+s.level+'</td><td>'+(PHASES[s.unit]||s.unit)+'</td>'+
     '<td style="font-size:11px;color:var(--t2)">'+(s.ward||'—')+'</td>'+
-    '<td>'+(s.mentorName || (s.teacherId? teacherName(s.teacherId) : '<span style="color:var(--t3)">未配對</span>'))+'</td>'+
+    '<td>'+(s.teacherId? teacherName(s.teacherId) : (s.mentorName ? s.mentorName+' <span style="color:var(--t3);font-size:10px">(未連動帳號)</span>' : '<span style="color:var(--t3)">未配對</span>'))+'</td>'+
     '<td><button class="btn sm" onclick="delStudent(\''+s.id+'\')">刪除</button></td></tr>'
   ).join('') : '<tr><td colspan="8" style="text-align:center;color:var(--t3);padding:14px">尚無學生資料</td></tr>';
 }
