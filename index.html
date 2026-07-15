@@ -417,19 +417,25 @@ const COHORTS = ['115年7月'];
    給你的 firebaseConfig 物件貼在下面取代這個範例值。
 ------------------------------------- */
 const firebaseConfig = {
-  apiKey: "請貼上你的 apiKey",
-  authDomain: "your-project.firebaseapp.com",
-  databaseURL: "https://your-project-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "your-project",
-  storageBucket: "your-project.appspot.com",
-  messagingSenderId: "000000000000",
-  appId: "1:000000000000:web:xxxxxxxxxxxxxxxx"
+  apiKey: "AIzaSyCxEbK2qt0hxFNi9kKPdl97rtf1zqcY_IM",
+  authDomain: "shh-nd.firebaseapp.com",
+  databaseURL: "https://shh-nd-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "shh-nd",
+  storageBucket: "shh-nd.firebasestorage.app",
+  messagingSenderId: "869083162702",
+  appId: "1:869083162702:web:4486284f34dcf8f313fb1f"
 };
-const FIREBASE_CONFIGURED = firebaseConfig.apiKey !== "請貼上你的 apiKey";
-let fbApp = null, fbDb = null;
-if(FIREBASE_CONFIGURED){
-  fbApp = firebase.initializeApp(firebaseConfig);
-  fbDb = firebase.database();
+const CONFIG_FILLED_IN = firebaseConfig.apiKey !== "請貼上你的 apiKey";
+let fbApp = null, fbDb = null, FIREBASE_CONFIGURED = false;
+if(CONFIG_FILLED_IN){
+  try{
+    if(typeof firebase === 'undefined') throw new Error('Firebase SDK 未載入（可能是網路擋掉 gstatic.com，或頁面快取了舊版本）');
+    fbApp = firebase.initializeApp(firebaseConfig);
+    fbDb = firebase.database();
+    FIREBASE_CONFIGURED = true;
+  }catch(e){
+    console.error('Firebase 初始化失敗，改用本機暫存模式：', e.message);
+  }
 }
 
 /* ---------- SHARED STORAGE (Firebase Realtime Database — works once hosted on GitHub Pages) ---------- */
@@ -454,6 +460,16 @@ function defaultDB(){
     assessments: [],
   };
 }
+function normalizeDB(raw){
+  const d = raw || {};
+  return {
+    schools: Array.isArray(d.schools) && d.schools.length ? d.schools : defaultDB().schools,
+    teachers: Array.isArray(d.teachers) ? d.teachers : (d.teachers ? Object.values(d.teachers) : []),
+    students: Array.isArray(d.students) ? d.students : (d.students ? Object.values(d.students) : []),
+    techniques: Array.isArray(d.techniques) && d.techniques.length ? d.techniques : (d.techniques ? Object.values(d.techniques) : seedTechniques()),
+    assessments: Array.isArray(d.assessments) ? d.assessments : (d.assessments ? Object.values(d.assessments) : []),
+  };
+}
 async function loadDB(){
   if(!FIREBASE_CONFIGURED){
     DB = defaultDB();
@@ -461,12 +477,11 @@ async function loadDB(){
   }
   try{
     const snap = await fbDb.ref(DB_PATH).once('value');
-    DB = snap.exists() ? snap.val() : defaultDB();
-    if(!DB.schools) DB = defaultDB();
+    DB = normalizeDB(snap.exists() ? snap.val() : null);
     // live sync: if someone else changes data, refresh the current view
     fbDb.ref(DB_PATH).on('value', (snap2)=>{
       if(!snap2.exists()) return;
-      DB = snap2.val();
+      DB = normalizeDB(snap2.val());
       renderAll();
     });
   }catch(e){
@@ -1055,15 +1070,22 @@ function genReminder(){
 
 /* ---------- INIT ---------- */
 (async function init(){
-  await loadDB();
-  if(!FIREBASE_CONFIGURED) document.getElementById('configWarning').classList.remove('hidden');
-  initCohortSel();
-  initAttSel();
-  populateViewSchoolSel();
-  document.getElementById('cohortSel').addEventListener('change', renderDashboard);
-  onRoleChange();
-  nav('dashboard');
-  document.getElementById('loadingOverlay').style.display = 'none';
+  try{
+    await loadDB();
+    if(!FIREBASE_CONFIGURED) document.getElementById('configWarning').classList.remove('hidden');
+    initCohortSel();
+    initAttSel();
+    populateViewSchoolSel();
+    document.getElementById('cohortSel').addEventListener('change', renderDashboard);
+    onRoleChange();
+    nav('dashboard');
+  }catch(e){
+    console.error('系統初始化發生錯誤：', e);
+    if(!DB) DB = defaultDB();
+    document.getElementById('configWarning').classList.remove('hidden');
+  }finally{
+    document.getElementById('loadingOverlay').style.display = 'none';
+  }
 })();
 </script>
 </body>
