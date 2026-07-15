@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>護理實習學生評核系統</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<style>
+:root{
+  --bg:#0b1121;--bg2:#111827;--bg3:#1a2235;--card:#151d2e;
+  --border:#1e2d45;--acc:#00c9a7;--a2:#3b82f6;--a3:#f59e0b;
+  --danger:#ef4444;--purple:#a855f7;--text:#e2e8f0;--t2:#94a3b8;--t3:#475569;
+  --r:12px;--rs:8px;--sw:250px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:var(--sw);background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:200}
+.sb-logo{padding:14px 16px;border-bottom:1px solid var(--border)}
+.sb-tag{font-family:'DM Mono',monospace;font-size:9px;color:var(--acc);letter-spacing:3px;margin-bottom:3px}
+.sb-logo h1{font-size:13px;font-weight:700;line-height:1.4}
+.sb-nav{flex:1;padding:8px 0}
+.ni{display:flex;align-items:center;gap:8px;padding:8px 16px;cursor:pointer;color:var(--t2);font-size:12.5px;border-left:3px solid transparent}
+.ni:hover{background:var(--bg3);color:var(--text)}
+.ni.active{background:rgba(0,201,167,.09);color:var(--acc);border-left-color:var(--acc);font-weight:500}
+.ni .ic{font-size:14px;width:18px;text-align:center}
+.nb{margin-left:auto;background:var(--danger);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px}
+.main{margin-left:var(--sw);min-height:100vh}
+.topbar{min-height:52px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:8px 22px;position:sticky;top:0;background:var(--bg);z-index:100;flex-wrap:wrap;gap:8px}
+.tbt{font-size:14.5px;font-weight:600}
+.tbr{display:flex;align-items:center;flex-wrap:wrap;gap:4px 0}
+.tbr label{color:var(--t3);font-size:11px;margin:0 6px 0 10px}
+.tbr select{background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:6px 10px;font-size:12px}
+.content{padding:20px 24px}
+.page{display:none}.page.active{display:block}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:14px}
+.ct{font-size:11px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px;justify-content:space-between}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--acc)}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:13px 15px;position:relative;overflow:hidden}
+.stat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--acc)}
+.stat.b::before{background:var(--a2)}.stat.y::before{background:var(--a3)}.stat.r::before{background:var(--danger)}
+.sl{font-size:10px;color:var(--t3);margin-bottom:4px}
+.sv{font-size:21px;font-weight:700;font-family:'DM Mono',monospace}
+table{width:100%;border-collapse:collapse}
+th{font-size:10.5px;color:var(--t3);font-weight:500;padding:7px 8px;border-bottom:1px solid var(--border);text-align:left}
+td{padding:9px 8px;border-bottom:1px solid rgba(30,45,69,.4);font-size:12.5px;vertical-align:middle}
+tr.rowlink{cursor:pointer}
+tr.rowlink:hover td{background:rgba(255,255,255,.02)}
+.lvtag{font-family:'DM Mono',monospace;font-size:10px;font-weight:700;padding:2px 8px;border-radius:7px;background:rgba(59,130,246,.15);color:var(--a2)}
+.evtag{font-family:'DM Mono',monospace;font-size:9px;font-weight:700;padding:2px 7px;border-radius:6px;display:inline-block}
+.ev-DOPS{background:rgba(0,201,167,.15);color:var(--acc)}
+.ev-MiniCEX{background:rgba(245,158,11,.15);color:var(--a3)}
+.ev-EPA{background:rgba(168,85,247,.15);color:var(--purple)}
+.ev-Portfolio{background:rgba(59,130,246,.15);color:var(--a2)}
+.badge{padding:3px 9px;border-radius:20px;font-size:10px;font-weight:600;border:1px solid;display:inline-block}
+.bg{background:rgba(0,201,167,.12);color:var(--acc);border-color:rgba(0,201,167,.3)}
+.by{background:rgba(245,158,11,.12);color:var(--a3);border-color:rgba(245,158,11,.3)}
+.br{background:rgba(239,68,68,.12);color:var(--danger);border-color:rgba(239,68,68,.3)}
+.pbar{height:6px;background:var(--bg3);border-radius:4px;overflow:hidden;margin-top:4px}
+.pbar i{display:block;height:100%;background:var(--acc)}
+.btn{padding:7px 14px;border-radius:7px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:12px;cursor:pointer;font-family:inherit}
+.btn:hover{border-color:var(--acc);color:var(--acc)}
+.btn.pri{background:var(--acc);border-color:var(--acc);color:#04241f;font-weight:600}
+.btn.pri:hover{opacity:.9;color:#04241f}
+.btn.warn{background:var(--a3);border-color:var(--a3);color:#3a2400;font-weight:600}
+.btn.sm{padding:4px 9px;font-size:11px}
+.crumb{font-size:11.5px;color:var(--t3);margin-bottom:12px;cursor:pointer}
+.crumb span{color:var(--acc);cursor:pointer}
+.item-card{padding:12px 14px;border:1px solid var(--border);border-radius:var(--rs);margin-bottom:9px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:.15s}
+.item-card:hover{border-color:var(--acc)}
+.item-l .ec{font-family:'DM Mono',monospace;font-size:10px;color:var(--a2);font-weight:700}
+.item-l .en{font-size:13.5px;font-weight:500;margin-top:2px}
+.rd{font-size:10.5px;color:var(--t3);margin-bottom:14px;line-height:1.6;background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.15);border-radius:7px;padding:9px 11px}
+.rubric{margin-bottom:14px}
+.rubric-row{display:flex;gap:8px;align-items:flex-start;padding:8px 0;border-bottom:1px dashed rgba(30,45,69,.6)}
+.rubric-row:last-child{border-bottom:none}
+.rlv{flex-shrink:0;width:64px;text-align:center;font-family:'DM Mono',monospace;font-size:11px;font-weight:700;padding:4px 0;border-radius:6px;cursor:pointer;border:2px solid var(--border);background:var(--bg3);color:var(--t2)}
+.rlv.l1{border-color:#ef4444}.rlv.l2{border-color:#f97316}.rlv.l3{border-color:#eab308}.rlv.l4{border-color:#22c55e}.rlv.l5{border-color:#00c9a7}
+.rlv.sel.l1{background:#ef4444;color:#fff}.rlv.sel.l2{background:#f97316;color:#fff}.rlv.sel.l3{background:#eab308;color:#000}.rlv.sel.l4{background:#22c55e;color:#000}.rlv.sel.l5{background:#00c9a7;color:#000}
+.rdesc{font-size:12px;color:var(--t2);line-height:1.5;padding-top:5px}
+label{display:block;font-size:11px;color:var(--t2);margin-bottom:5px;font-weight:500}
+select,input,textarea{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--rs);color:var(--text);padding:8px 10px;font-size:13px;font-family:inherit;outline:none}
+textarea{min-height:70px;resize:vertical}
+.fg{margin-bottom:11px}
+.pre-btn{padding:3px 9px;border:1px solid var(--border);border-radius:13px;background:var(--bg3);color:var(--t2);font-size:10.5px;cursor:pointer;margin-right:4px;margin-bottom:4px}
+.pre-btn:hover{border-color:var(--acc);color:var(--acc)}
+.result-box{margin-top:16px;padding:16px;border-radius:var(--r);text-align:center;font-size:16px;font-weight:700}
+.result-box.pass{background:rgba(0,201,167,.1);border:1px solid var(--acc);color:var(--acc)}
+.result-box.fail{background:rgba(239,68,68,.1);border:1px solid var(--danger);color:var(--danger)}
+.al{padding:10px 12px;border-radius:8px;font-size:12px;margin-bottom:10px}
+.aok{background:rgba(0,201,167,.1);border:1px solid var(--acc);color:var(--acc)}
+.ai{background:rgba(59,130,246,.08);border:1px solid var(--a2);color:var(--a2)}
+.hidden{display:none!important}
+.mailbox{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:11.5px;color:var(--t2);white-space:pre-wrap;margin-top:8px;line-height:1.6;font-family:'DM Mono',monospace}
+.tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.tab{padding:7px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--t2);font-size:12.5px;cursor:pointer}
+.tab.active{background:rgba(0,201,167,.1);border-color:var(--acc);color:var(--acc);font-weight:600}
+.subcard{display:none}.subcard.active{display:block}
+.chiplist{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.chip{font-size:10.5px;padding:3px 9px;border-radius:12px;background:var(--bg3);border:1px solid var(--border);color:var(--t2)}
+.masked{color:var(--t3);font-style:italic}
+.anlgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.barrow{display:flex;align-items:center;gap:8px;margin-bottom:9px;font-size:11.5px}
+.barrow .lbl{width:130px;flex-shrink:0;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.barrow .track{flex:1;background:var(--bg3);border-radius:4px;height:14px;overflow:hidden}
+.barrow .track i{display:block;height:100%;background:var(--acc)}
+.barrow .val{width:34px;text-align:right;font-family:'DM Mono',monospace;font-size:11px;color:var(--t2)}
+#loadingOverlay{position:fixed;inset:0;background:var(--bg);color:var(--t2);display:flex;align-items:center;justify-content:center;z-index:9999;font-family:'DM Mono',monospace;font-size:13px;letter-spacing:1px}
+.savebadge{position:fixed;bottom:16px;right:16px;background:var(--bg2);border:1px solid var(--acc);color:var(--acc);font-size:11px;padding:6px 13px;border-radius:20px;z-index:500;opacity:0;transition:opacity .2s;font-family:'DM Mono',monospace}
+.savebadge.show{opacity:1}
+.roletag{font-size:10px;padding:2px 8px;border-radius:10px;border:1px solid var(--border);color:var(--t2)}
+</style>
+</head>
+<body>
+
+<div id="loadingOverlay">載入資料中…</div>
+<div id="configWarning" class="hidden" style="position:fixed;top:0;left:0;right:0;background:#7c2d12;color:#fed7aa;font-size:12px;text-align:center;padding:8px 12px;z-index:9998;font-family:'DM Mono',monospace">
+  ⚠️ 尚未設定 Firebase，目前資料只存在你自己的瀏覽器、不會與他人共享。請依 README 設定 firebaseConfig。
+</div>
+<div class="savebadge" id="saveBadge">已儲存</div>
+
+<div class="sidebar">
+  <div class="sb-logo">
+    <div class="sb-tag">TEACHER / SCHOOL PORTAL</div>
+    <h1>護理實習<br>學生評核系統</h1>
+  </div>
+  <div class="sb-nav">
+    <div class="ni active" data-page="dashboard" onclick="nav('dashboard')"><span class="ic">📊</span>儀表板</div>
+    <div class="ni" data-page="students" onclick="nav('students')"><span class="ic">👩‍⚕️</span>學生列表</div>
+    <div class="ni" data-page="analytics" onclick="nav('analytics')"><span class="ic">📈</span>數據分析</div>
+    <div class="ni" data-page="remind" onclick="nav('remind')"><span class="ic">✉️</span>提醒未評核 <span class="nb" id="nb-remind">0</span></div>
+    <div class="ni" data-page="admin" onclick="nav('admin')"><span class="ic">⚙️</span>管理平台</div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="topbar">
+    <div class="tbt" id="tbt">儀表板</div>
+    <div class="tbr">
+      <label>身分</label>
+      <select id="roleSel" onchange="onRoleChange()">
+        <option value="teacher">老師端（完整權限）</option>
+        <option value="school">學校端（去識別化）</option>
+      </select>
+      <label id="viewSchoolLabel" class="hidden">檢視學校</label>
+      <select id="viewSchoolSel" class="hidden" onchange="renderAll()"></select>
+      <label>實習梯次</label>
+      <select id="cohortSel" onchange="renderAll()"></select>
+      <label id="attSelLabel">目前登入老師</label>
+      <select id="attSel" onchange="renderAll()"></select>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="g4" id="statCards"></div>
+      <div class="card">
+        <div class="ct"><span><span class="dot"></span>學生成效總覽</span></div>
+        <table>
+          <thead><tr><th>學生</th><th>學校</th><th>學制 / 年級</th><th>已評核 / 應評核項目</th><th>完成度</th><th>通過率</th><th></th></tr></thead>
+          <tbody id="dashTbl"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- STUDENTS LIST -->
+    <div class="page" id="page-students">
+      <div class="card">
+        <div class="ct"><span><span class="dot"></span>選擇要評核的學生</span></div>
+        <table>
+          <thead><tr><th>學生</th><th>學校</th><th>學制 / 年級</th><th>實習科目</th><th>待評核項目</th><th></th></tr></thead>
+          <tbody id="studentsTbl"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- STUDENT DETAIL -->
+    <div class="page" id="page-detail">
+      <div class="crumb"><span onclick="nav('students')">學生列表</span> / <span id="detailName"></span></div>
+      <div class="card">
+        <div class="ct"><span><span class="dot"></span><span id="detailTitle"></span> — 系統依實習科目自動帶出應評核項目</span></div>
+        <div id="itemList"></div>
+      </div>
+    </div>
+
+    <!-- ASSESS ITEM -->
+    <div class="page" id="page-assess">
+      <div class="crumb"><span onclick="nav('students')">學生列表</span> / <span id="a-crumb-name" onclick="backToDetail()" style="cursor:pointer;text-decoration:underline"></span> / <span id="a-crumb-item"></span></div>
+      <div class="card">
+        <div class="ct"><span><span id="a-item-code"></span> · <span id="a-item-name"></span></span><span class="evtag" id="a-item-ev"></span></div>
+        <div class="rd" id="a-item-desc"></div>
+        <label>評分規準（點選符合本次觀察表現的等級）</label>
+        <div class="rubric" id="rubric"></div>
+        <label>質性回饋（給學生具體建議）</label>
+        <div style="margin-bottom:6px">
+          <button class="pre-btn" onclick="insertPre('表現穩定，操作流程正確，能獨立完成。')">＋穩定完成</button>
+          <button class="pre-btn" onclick="insertPre('基本掌握，但仍需在關鍵步驟給予口頭提示。')">＋需提示</button>
+          <button class="pre-btn" onclick="insertPre('建議加強：')">＋建議加強</button>
+        </div>
+        <textarea id="fb" placeholder="請輸入具體回饋..."></textarea>
+        <div style="margin-top:14px;display:flex;gap:8px">
+          <button class="btn pri" onclick="submitAssess()">送出評核</button>
+          <button class="btn" onclick="backToDetail()">取消</button>
+        </div>
+        <div id="resultArea"></div>
+      </div>
+    </div>
+
+    <!-- ANALYTICS -->
+    <div class="page" id="page-analytics">
+      <div class="g4" id="anlCards"></div>
+      <div class="anlgrid">
+        <div class="card">
+          <div class="ct"><span><span class="dot"></span>用量統計 — 各評量方法登錄次數</span></div>
+          <div id="anlMethodUsage"></div>
+        </div>
+        <div class="card">
+          <div class="ct"><span><span class="dot"></span>用量統計 — 各實習科目登錄次數</span></div>
+          <div id="anlPhaseUsage"></div>
+        </div>
+        <div class="card">
+          <div class="ct"><span><span class="dot"></span>用量統計 — 各技術項目登錄次數（前 10）</span></div>
+          <div id="anlTechUsage"></div>
+        </div>
+        <div class="card">
+          <div class="ct"><span><span class="dot"></span>用量統計 — 帶教老師評核次數</span></div>
+          <div id="anlTeacherUsage"></div>
+        </div>
+        <div class="card">
+          <div class="ct"><span><span class="dot"></span>程度統計 — 各評量方法平均信賴等級</span></div>
+          <div id="anlMethodLevel"></div>
+        </div>
+        <div class="card">
+          <div class="ct"><span><span class="dot"></span>程度統計 — 各技術項目平均信賴等級（前 10）</span></div>
+          <div id="anlTechLevel"></div>
+        </div>
+        <div class="card" style="grid-column:1/-1">
+          <div class="ct"><span><span class="dot"></span>程度統計 — 信賴等級分布（Level 1–5）</span></div>
+          <div id="anlLevelDist"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REMIND -->
+    <div class="page" id="page-remind">
+      <div class="card">
+        <div class="ct"><span><span class="dot"></span>尚未完成評核清單</span></div>
+        <table>
+          <thead><tr><th>學生</th><th>學校 / 學制年級</th><th>未評核項目</th><th>負責老師</th></tr></thead>
+          <tbody id="remindTbl"></tbody>
+        </table>
+      </div>
+      <div class="card">
+        <div class="ct"><span><span class="dot"></span>發送提醒信</span></div>
+        <p style="font-size:11.5px;color:var(--t2);margin-bottom:10px">產生提醒信件內容，點擊後以您的郵件軟體開啟，收件人自動帶入相關帶教老師信箱。</p>
+        <button class="btn warn" onclick="genReminder()">✉️ 產生提醒信件</button>
+        <div class="mailbox hidden" id="mailPreview"></div>
+        <div id="mailSendArea"></div>
+      </div>
+    </div>
+
+    <!-- ADMIN / MANAGEMENT -->
+    <div class="page" id="page-admin">
+      <div class="card">
+        <div class="ct"><span><span class="dot"></span>資料匯出</span></div>
+        <p style="font-size:11.5px;color:var(--t2);margin-bottom:10px">匯出後可自行上傳至 Google Drive，或直接傳給 Claude 請它放入你指定的資料夾。</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn" onclick="exportStudentsCsv()">📥 匯出學生名冊（CSV）</button>
+          <button class="btn" onclick="exportAssessCsv()">📥 匯出評核紀錄（CSV）</button>
+          <button class="btn pri" onclick="exportFullJson()">📥 匯出完整備份（JSON）</button>
+        </div>
+      </div>
+      <div class="tabs">
+        <div class="tab active" id="tab-teacher" onclick="switchAdminTab('teacher')">老師管理</div>
+        <div class="tab" id="tab-student" onclick="switchAdminTab('student')">學生管理</div>
+        <div class="tab" id="tab-school" onclick="switchAdminTab('school')">學校管理</div>
+        <div class="tab" id="tab-technique" onclick="switchAdminTab('technique')">技術項目管理</div>
+      </div>
+
+      <!-- TEACHER MGMT -->
+      <div class="subcard active" id="sub-teacher">
+        <div class="card">
+          <div class="ct"><span><span class="dot"></span>新建老師</span></div>
+          <div class="g2">
+            <div class="fg"><label>學校<span style="color:var(--danger)">*</span></label><select id="t-school"></select></div>
+            <div class="fg"><label>負責科目 / Phase<span style="color:var(--danger)">*</span></label><select id="t-subject"></select></div>
+            <div class="fg"><label>老師姓名<span style="color:var(--danger)">*</span></label><input id="t-name" placeholder="例：林慧珍"></div>
+            <div class="fg"><label>Email<span style="color:var(--danger)">*</span></label><input id="t-email" placeholder="teacher@example.com"></div>
+            <div class="fg"><label>實習期間（起）</label><input id="t-start" type="date"></div>
+            <div class="fg"><label>實習期間（迄）</label><input id="t-end" type="date"></div>
+          </div>
+          <div class="fg"><label>分派學生（可複選；建立老師後亦可於學生管理指派）</label>
+            <select id="t-students" multiple size="5"></select>
+          </div>
+          <button class="btn pri" onclick="submitTeacher()">＋ 新建老師</button>
+        </div>
+        <div class="card">
+          <div class="ct"><span><span class="dot"></span>老師名單</span></div>
+          <table>
+            <thead><tr><th>姓名</th><th>學校</th><th>負責科目</th><th>Email</th><th>實習期間</th><th>分派學生數</th><th></th></tr></thead>
+            <tbody id="teacherTbl"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- STUDENT MGMT -->
+      <div class="subcard" id="sub-student">
+        <div class="card">
+          <div class="ct"><span><span class="dot"></span>新建學生</span></div>
+          <div class="g2">
+            <div class="fg"><label>學校<span style="color:var(--danger)">*</span></label><select id="s-school"></select></div>
+            <div class="fg"><label>學生姓名<span style="color:var(--danger)">*</span></label><input id="s-name" placeholder="例：李品妍"></div>
+            <div class="fg"><label>學制<span style="color:var(--danger)">*</span></label>
+              <select id="s-system"><option>五專</option><option>二技(日)</option><option>四技</option><option>大學</option><option>學士後護理</option><option>高齡</option></select>
+            </div>
+            <div class="fg"><label>年級<span style="color:var(--danger)">*</span></label>
+              <select id="s-grade"><option>一年級</option><option>二年級</option><option>三年級</option><option>四年級</option><option>五年級</option></select>
+            </div>
+            <div class="fg"><label>實習科目 / Phase<span style="color:var(--danger)">*</span></label><select id="s-subject" onchange="previewAutoForms()"></select></div>
+            <div class="fg"><label>負責老師</label><select id="s-teacher"><option value="">— 依學校/科目自動配對 —</option></select></div>
+          </div>
+          <div class="al ai" id="autoFormsPreview">系統將依實習科目自動帶出應評核的 DOPS / Mini-CEX / EPA 項目。</div>
+          <button class="btn pri" onclick="submitStudent()">＋ 新建學生</button>
+        </div>
+        <div class="card">
+          <div class="ct"><span><span class="dot"></span>學生名單</span></div>
+          <table>
+            <thead><tr><th>姓名</th><th>學校</th><th>學制 / 年級</th><th>實習科目</th><th>負責老師</th><th></th></tr></thead>
+            <tbody id="studentAdminTbl"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- SCHOOL MGMT -->
+      <div class="subcard" id="sub-school">
+        <div class="card">
+          <div class="ct"><span><span class="dot"></span>新建學校</span></div>
+          <div class="fg"><label>學校名稱</label><input id="sc-name" placeholder="例：臺北醫學大學"></div>
+          <button class="btn pri" onclick="submitSchool()">＋ 新建學校</button>
+        </div>
+        <div class="card">
+          <div class="ct"><span><span class="dot"></span>合作學校清單（可分享本系統連結給以下學校端使用）</span></div>
+          <div class="chiplist" id="schoolChips"></div>
+        </div>
+      </div>
+
+      <!-- TECHNIQUE MGMT -->
+      <div class="subcard" id="sub-technique">
+        <div class="card">
+          <div class="ct"><span><span class="dot"></span>新增技術項目</span></div>
+          <div class="g2">
+            <div class="fg"><label>實習科目 / Phase<span style="color:var(--danger)">*</span></label><select id="tq-unit"></select></div>
+            <div class="fg"><label>評量方法<span style="color:var(--danger)">*</span></label>
+              <select id="tq-method"><option value="DOPS">DOPS</option><option value="MiniCEX">Mini-CEX</option><option value="EPA">EPA</option><option value="Portfolio">Portfolio</option></select>
+            </div>
+            <div class="fg"><label>對應核心能力</label><select id="tq-comp"></select></div>
+            <div class="fg"><label>技術 / 項目名稱<span style="color:var(--danger)">*</span></label><input id="tq-name" placeholder="例：導尿管留置"></div>
+          </div>
+          <div class="fg"><label>項目說明（評核時會顯示給老師參考）</label><textarea id="tq-desc" placeholder="能正確評估並執行…"></textarea></div>
+          <button class="btn pri" onclick="submitTechnique()">＋ 新增技術項目</button>
+        </div>
+        <div class="card">
+          <div class="ct"><span><span class="dot"></span>技術項目清單（依科目分組）</span></div>
+          <div id="techniqueList"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/* ---------- STATIC REFERENCE DATA ---------- */
+const EVIDENCE_MAP = {C1:'DOPS',C2:'MiniCEX',C3:'MiniCEX',C4:'DOPS',C5:'Portfolio',C6:'MiniCEX',C7:'EPA',C8:'DOPS'};
+const EVIDENCE_LABEL = {DOPS:'DOPS',MiniCEX:'Mini-CEX',EPA:'EPA',Portfolio:'Portfolio'};
+
+const CORE_COMPETENCIES = [
+  {code:'C1',name:'臨床照護能力',desc:'能依病人狀況執行安全、正確且符合實證之護理措施。'},
+  {code:'C2',name:'溝通能力',desc:'能與病人、家屬及團隊成員進行清楚、同理、有效之溝通。'},
+  {code:'C3',name:'批判性思考與臨床推理',desc:'能整合病人資料進行合理判斷並提出適當護理處置計畫。'},
+  {code:'C4',name:'病人安全',desc:'能落實病人安全措施，主動辨識並通報潛在風險與異常。'},
+  {code:'C5',name:'專業素養',desc:'能展現護理專業倫理、責任感與持續學習之態度。'},
+  {code:'C6',name:'團隊合作',desc:'能與跨團隊成員協調合作，適時尋求協助與交班。'},
+  {code:'C7',name:'實證照護',desc:'能運用實證資源支持臨床決策與護理措施。'},
+  {code:'C8',name:'資訊科技',desc:'能正確使用護理資訊系統完成記錄與資料查詢。'},
+];
+const COMP_NAME = Object.fromEntries(CORE_COMPETENCIES.map(c=>[c.code,c.name]));
+
+const PHASES = {
+  '基本護理': 'Phase1 基本護理',
+  '內外科': 'Phase2 內外科',
+  '產科': 'Phase3 產科',
+  '兒科': 'Phase4 兒科',
+  '精神科': 'Phase5 精神科',
+  '社區': 'Phase6 社區',
+  '綜合實習': 'Phase7 綜合實習',
+};
+
+const RUBRIC = [
+  {lv:'l1',label:'Level1 需完全指導',desc:'完全無法獨立執行，需帶教老師全程協助與指導。'},
+  {lv:'l2',label:'Level2 需大量協助',desc:'僅能完成部分步驟，關鍵決策與操作仍需大量協助。'},
+  {lv:'l3',label:'Level3 可部分獨立完成',desc:'能在監督下獨立完成大部分流程，符合本階段基本要求。'},
+  {lv:'l4',label:'Level4 可獨立完成',desc:'能穩定獨立完成，品質良好，符合晉級標準。'},
+  {lv:'l5',label:'Level5 可指導他人',desc:'表現優異且能指導、示範予同儕，超出本階段預期。'},
+];
+const PASS_THRESHOLD = 3;
+const COHORTS = ['115年7月'];
+
+/* ---------- FIREBASE CONFIG ----------
+   請到 https://console.firebase.google.com/ 建立免費專案，
+   啟用 Realtime Database 後，把「專案設定→一般→你的應用程式」
+   給你的 firebaseConfig 物件貼在下面取代這個範例值。
+------------------------------------- */
+const firebaseConfig = {
+  apiKey: "請貼上你的 apiKey",
+  authDomain: "your-project.firebaseapp.com",
+  databaseURL: "https://your-project-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "your-project",
+  storageBucket: "your-project.appspot.com",
+  messagingSenderId: "000000000000",
+  appId: "1:000000000000:web:xxxxxxxxxxxxxxxx"
+};
+const FIREBASE_CONFIGURED = firebaseConfig.apiKey !== "請貼上你的 apiKey";
+let fbApp = null, fbDb = null;
+if(FIREBASE_CONFIGURED){
+  fbApp = firebase.initializeApp(firebaseConfig);
+  fbDb = firebase.database();
+}
+
+/* ---------- SHARED STORAGE (Firebase Realtime Database — works once hosted on GitHub Pages) ---------- */
+const DB_PATH = 'nd_sn_shared_db_v1';
+let DB = null;
+
+function seedTechniques(){
+  const list = [];
+  Object.keys(PHASES).forEach(unit=>{
+    CORE_COMPETENCIES.forEach(c=>{
+      list.push({id: unit+'-'+c.code, unit, compCode:c.code, name:c.name, desc:c.desc, method:EVIDENCE_MAP[c.code]});
+    });
+  });
+  return list;
+}
+function defaultDB(){
+  return {
+    schools: ['臺北醫學大學','耕莘健康管理專科學校','國立臺北護理健康大學','元培醫事科技大學','長庚科技大學','康寧大學','馬偕醫護管理專科學校'],
+    teachers: [],
+    students: [],
+    techniques: seedTechniques(),
+    assessments: [],
+  };
+}
+async function loadDB(){
+  if(!FIREBASE_CONFIGURED){
+    DB = defaultDB();
+    return;
+  }
+  try{
+    const snap = await fbDb.ref(DB_PATH).once('value');
+    DB = snap.exists() ? snap.val() : defaultDB();
+    if(!DB.schools) DB = defaultDB();
+    // live sync: if someone else changes data, refresh the current view
+    fbDb.ref(DB_PATH).on('value', (snap2)=>{
+      if(!snap2.exists()) return;
+      DB = snap2.val();
+      renderAll();
+    });
+  }catch(e){
+    console.error('Firebase 連線失敗，改用本機暫存（不會與其他人共享）', e);
+    DB = defaultDB();
+  }
+}
+let saveTimer = null;
+async function persist(){
+  if(!FIREBASE_CONFIGURED){
+    console.warn('尚未設定 Firebase，資料不會被保存，重新整理後會消失。');
+    return;
+  }
+  try{
+    await fbDb.ref(DB_PATH).set(DB);
+    const b = document.getElementById('saveBadge');
+    b.classList.add('show');
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(()=>b.classList.remove('show'), 1100);
+  }catch(e){ console.error('儲存失敗', e); }
+}
+
+/* ---------- DATA ACCESSORS ---------- */
+function getSchools(){ return DB.schools; }
+function getTeachers(){ return DB.teachers; }
+function getAllStudents(){ return DB.students; }
+function getStudents(){
+  const all = getAllStudents();
+  const c = document.getElementById('cohortSel') ? document.getElementById('cohortSel').value : COHORTS[0];
+  return c ? all.filter(s=>s.cohort===c) : all;
+}
+function getAssess(){ return DB.assessments; }
+function getTechniques(){ return DB.techniques; }
+
+function itemsForLevel(level, unit){
+  return getTechniques().filter(t=>t.unit===unit).map(t=>({code:t.id,name:t.name,desc:t.desc,evidence:t.method,compCode:t.compCode}));
+}
+function assessFor(studentId, code){
+  return getAssess().find(a=>a.studentId===studentId && a.code===code);
+}
+function teacherName(id){ const t=getTeachers().find(x=>x.id===id); return t? (t.name+'（'+t.school+'）') : (id||'—'); }
+function teacherEmail(id){ const t=getTeachers().find(x=>x.id===id); return t? t.email : ''; }
+function autoMatchTeacher(school, subject){
+  const t = getTeachers().find(x=>x.school===school && x.subject===subject);
+  return t ? t.id : '';
+}
+
+/* ---------- ROLE / VIEW SCOPE ---------- */
+function currentRole(){ return document.getElementById('roleSel').value; }
+function currentViewSchool(){ return document.getElementById('viewSchoolSel').value; }
+function maskName(name){ return (name && name[0] ? name[0] : '') + '○○'; }
+function displayStudentName(s){ return currentRole()==='school' ? maskName(s.name) : s.name; }
+
+// students visible given current role + scope
+function scopedStudents(){
+  const all = getStudents();
+  if(currentRole()==='school'){
+    const sc = currentViewSchool();
+    return sc ? all.filter(s=>s.school===sc) : [];
+  }
+  return all;
+}
+
+function onRoleChange(){
+  const role = currentRole();
+  const isSchool = role==='school';
+  document.getElementById('viewSchoolLabel').classList.toggle('hidden', !isSchool);
+  document.getElementById('viewSchoolSel').classList.toggle('hidden', !isSchool);
+  document.getElementById('attSelLabel').classList.toggle('hidden', isSchool);
+  document.getElementById('attSel').classList.toggle('hidden', isSchool);
+  document.querySelector('.ni[data-page="admin"]').classList.toggle('hidden', isSchool);
+  document.querySelector('.ni[data-page="remind"]').classList.toggle('hidden', isSchool);
+  if(isSchool && (currentPage()==='admin' || currentPage()==='remind' || currentPage()==='assess')){
+    nav('dashboard');
+  } else {
+    renderAll();
+  }
+}
+function populateViewSchoolSel(){
+  const sel = document.getElementById('viewSchoolSel');
+  sel.innerHTML = getSchools().map(s=>'<option value="'+s+'">'+s+'</option>').join('');
+}
+function currentPage(){
+  const p = document.querySelector('.page.active');
+  return p ? p.id.replace('page-','') : 'dashboard';
+}
+
+/* ---------- NAV ---------- */
+let CUR = {studentId:null, code:null};
+const TITLES = {dashboard:'儀表板',students:'學生列表',detail:'學生評核項目',assess:'評核',analytics:'數據分析',remind:'提醒未評核',admin:'管理平台'};
+function nav(page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.querySelectorAll('.sb-nav .ni').forEach(n=>n.classList.remove('active'));
+  const el = document.querySelector('.ni[data-page="'+page+'"]');
+  if(el) el.classList.add('active');
+  document.getElementById('tbt').textContent = TITLES[page]||'';
+  if(page==='dashboard') renderDashboard();
+  if(page==='students') renderStudents();
+  if(page==='analytics') renderAnalytics();
+  if(page==='remind') renderRemind();
+  if(page==='admin') renderAdmin();
+}
+function backToDetail(){ openStudent(CUR.studentId); }
+function renderAll(){ nav(currentPage()); }
+
+/* ---------- COHORT + ATTENDING SELECT ---------- */
+function initCohortSel(){
+  const sel = document.getElementById('cohortSel');
+  sel.innerHTML = COHORTS.map(c=>'<option value="'+c+'">'+c+'</option>').join('');
+  sel.value = COHORTS[0];
+}
+function initAttSel(){
+  const sel = document.getElementById('attSel');
+  const teachers = getTeachers();
+  sel.innerHTML = teachers.length
+    ? teachers.map(t=>'<option value="'+t.id+'">'+t.name+'（'+t.school+' · '+t.subject+'）</option>').join('')
+    : '<option value="">— 尚無老師，請至管理平台新建 —</option>';
+}
+
+/* ---------- ADMIN TABS ---------- */
+function switchAdminTab(tab){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.subcard').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  document.getElementById('sub-'+tab).classList.add('active');
+}
+function renderAdmin(){
+  fillSchoolSelects();
+  fillSubjectSelects();
+  renderTeacherTbl();
+  renderStudentAdminTbl();
+  renderSchoolChips();
+  fillTechniqueSelects();
+  renderTechniqueList();
+  previewAutoForms();
+}
+function fillSchoolSelects(){
+  const schools = getSchools();
+  ['t-school','s-school'].forEach(id=>{
+    const sel = document.getElementById(id);
+    const cur = sel.value;
+    sel.innerHTML = schools.map(s=>'<option value="'+s+'">'+s+'</option>').join('');
+    if(schools.includes(cur)) sel.value = cur;
+  });
+}
+function fillSubjectSelects(){
+  const units = Object.keys(PHASES);
+  ['t-subject','s-subject'].forEach(id=>{
+    const sel = document.getElementById(id);
+    const cur = sel.value;
+    sel.innerHTML = units.map(u=>'<option value="'+u+'">'+PHASES[u]+'</option>').join('');
+    if(units.includes(cur)) sel.value = cur;
+  });
+}
+function previewAutoForms(){
+  const unit = document.getElementById('s-subject').value;
+  const items = itemsForLevel(null, unit);
+  const grouped = {};
+  items.forEach(it=>{ (grouped[it.evidence]=grouped[it.evidence]||[]).push(it.name); });
+  const html = Object.keys(grouped).map(ev=>'<span class="evtag ev-'+ev+'">'+EVIDENCE_LABEL[ev]+'</span> '+grouped[ev].join('、')).join('<br>');
+  document.getElementById('autoFormsPreview').innerHTML = '系統依「'+(PHASES[unit]||'')+'」自動帶出應評核項目與評核工具：<br>'+html;
+}
+
+/* ---------- TEACHER MGMT ---------- */
+async function submitTeacher(){
+  const school = document.getElementById('t-school').value;
+  const subject = document.getElementById('t-subject').value;
+  const name = document.getElementById('t-name').value.trim();
+  const email = document.getElementById('t-email').value.trim();
+  const start = document.getElementById('t-start').value;
+  const end = document.getElementById('t-end').value;
+  const studentIds = Array.from(document.getElementById('t-students').selectedOptions).map(o=>o.value);
+  if(!school||!subject||!name||!email){ alert('請填寫學校、負責科目、姓名與 Email'); return; }
+  DB.teachers.push({id:'t'+Date.now(), school, subject, name, email, periodStart:start, periodEnd:end, studentIds});
+  await persist();
+  document.getElementById('t-name').value=''; document.getElementById('t-email').value='';
+  document.getElementById('t-start').value=''; document.getElementById('t-end').value='';
+  renderTeacherTbl(); initAttSel();
+}
+async function delTeacher(id){
+  if(!confirm('確定刪除此老師？')) return;
+  DB.teachers = DB.teachers.filter(t=>t.id!==id);
+  await persist();
+  renderTeacherTbl(); initAttSel();
+}
+function renderTeacherTbl(){
+  const sel = document.getElementById('t-students');
+  sel.innerHTML = getAllStudents().map(s=>'<option value="'+s.id+'">'+s.name+'（'+s.school+'）</option>').join('');
+  const teachers = getTeachers();
+  document.getElementById('teacherTbl').innerHTML = teachers.length ? teachers.map(t=>
+    '<tr><td>'+t.name+'</td><td>'+t.school+'</td><td>'+(PHASES[t.subject]||t.subject)+'</td><td>'+t.email+'</td>'+
+    '<td>'+(t.periodStart||'—')+' ~ '+(t.periodEnd||'—')+'</td><td>'+(t.studentIds||[]).length+'</td>'+
+    '<td><button class="btn sm" onclick="delTeacher(\''+t.id+'\')">刪除</button></td></tr>'
+  ).join('') : '<tr><td colspan="7" style="text-align:center;color:var(--t3);padding:14px">尚無老師資料</td></tr>';
+}
+
+/* ---------- STUDENT MGMT (admin form) ---------- */
+function fillTeacherOptionsForStudent(){
+  const sel = document.getElementById('s-teacher');
+  const teachers = getTeachers();
+  sel.innerHTML = '<option value="">— 依學校/科目自動配對 —</option>' + teachers.map(t=>'<option value="'+t.id+'">'+t.name+'（'+t.school+' · '+t.subject+'）</option>').join('');
+}
+async function submitStudent(){
+  const school = document.getElementById('s-school').value;
+  const name = document.getElementById('s-name').value.trim();
+  const system = document.getElementById('s-system').value;
+  const grade = document.getElementById('s-grade').value;
+  const unit = document.getElementById('s-subject').value;
+  let teacherId = document.getElementById('s-teacher').value;
+  if(!school||!name||!system||!grade||!unit){ alert('請完整填寫學校、姓名、學制、年級、實習科目'); return; }
+  if(!teacherId) teacherId = autoMatchTeacher(school, unit);
+  DB.students.push({id:'s'+Date.now(), name, school, level:system+' / '+grade, unit, cohort:(document.getElementById('cohortSel').value||COHORTS[0]), teacherId});
+  await persist();
+  document.getElementById('s-name').value='';
+  renderStudentAdminTbl(); renderStudents(); renderDashboard();
+}
+async function delStudent(id){
+  if(!confirm('確定刪除此學生？其評核紀錄也將一併刪除。')) return;
+  DB.students = DB.students.filter(s=>s.id!==id);
+  DB.assessments = DB.assessments.filter(a=>a.studentId!==id);
+  await persist();
+  renderStudentAdminTbl(); renderStudents(); renderDashboard();
+}
+function renderStudentAdminTbl(){
+  fillTeacherOptionsForStudent();
+  const students = getAllStudents();
+  document.getElementById('studentAdminTbl').innerHTML = students.length ? students.map(s=>
+    '<tr><td>'+s.name+'</td><td>'+(s.school||'—')+'</td><td>'+s.level+'</td><td>'+(PHASES[s.unit]||s.unit)+'</td>'+
+    '<td>'+(s.teacherId? teacherName(s.teacherId) : '<span style="color:var(--t3)">未配對</span>')+'</td>'+
+    '<td><button class="btn sm" onclick="delStudent(\''+s.id+'\')">刪除</button></td></tr>'
+  ).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--t3);padding:14px">尚無學生資料</td></tr>';
+}
+
+/* ---------- SCHOOL MGMT ---------- */
+async function submitSchool(){
+  const name = document.getElementById('sc-name').value.trim();
+  if(!name) return;
+  if(!DB.schools.includes(name)) DB.schools.push(name);
+  await persist();
+  document.getElementById('sc-name').value='';
+  renderSchoolChips(); fillSchoolSelects(); populateViewSchoolSel();
+}
+function renderSchoolChips(){
+  document.getElementById('schoolChips').innerHTML = getSchools().map(s=>'<span class="chip">'+s+'</span>').join('');
+}
+
+/* ---------- TECHNIQUE MGMT ---------- */
+function fillTechniqueSelects(){
+  const unitSel = document.getElementById('tq-unit');
+  const cur = unitSel.value;
+  unitSel.innerHTML = Object.keys(PHASES).map(u=>'<option value="'+u+'">'+PHASES[u]+'</option>').join('');
+  if(Object.keys(PHASES).includes(cur)) unitSel.value = cur;
+  const compSel = document.getElementById('tq-comp');
+  compSel.innerHTML = '<option value="">（不指定）</option>' + CORE_COMPETENCIES.map(c=>'<option value="'+c.code+'">'+c.code+' '+c.name+'</option>').join('');
+}
+async function submitTechnique(){
+  const unit = document.getElementById('tq-unit').value;
+  const method = document.getElementById('tq-method').value;
+  const compCode = document.getElementById('tq-comp').value;
+  const name = document.getElementById('tq-name').value.trim();
+  const desc = document.getElementById('tq-desc').value.trim();
+  if(!unit||!method||!name){ alert('請填寫實習科目、評量方法與技術名稱'); return; }
+  DB.techniques.push({id:'tq'+Date.now(), unit, compCode, method, name, desc});
+  await persist();
+  document.getElementById('tq-name').value=''; document.getElementById('tq-desc').value='';
+  renderTechniqueList();
+}
+async function delTechnique(id){
+  if(!confirm('確定刪除此技術項目？已存在的評核紀錄仍會保留但會顯示為「項目已刪除」。')) return;
+  DB.techniques = DB.techniques.filter(t=>t.id!==id);
+  await persist();
+  renderTechniqueList();
+}
+function renderTechniqueList(){
+  const units = Object.keys(PHASES);
+  const html = units.map(u=>{
+    const items = getTechniques().filter(t=>t.unit===u);
+    if(!items.length) return '';
+    const rows = items.map(t=>
+      '<div class="item-card" style="cursor:default">'+
+        '<div class="item-l"><div class="ec"><span class="evtag ev-'+t.method+'">'+EVIDENCE_LABEL[t.method]+'</span> '+(t.compCode?(' '+t.compCode+' '+(COMP_NAME[t.compCode]||'')):'')+'</div><div class="en">'+t.name+'</div></div>'+
+        '<button class="btn sm" onclick="delTechnique(\''+t.id+'\')">刪除</button>'+
+      '</div>'
+    ).join('');
+    return '<div style="margin-bottom:10px"><div style="font-size:11px;color:var(--t3);margin-bottom:6px;font-family:\'DM Mono\',monospace">'+PHASES[u]+'</div>'+rows+'</div>';
+  }).join('');
+  document.getElementById('techniqueList').innerHTML = html || '<div style="text-align:center;color:var(--t3);padding:14px">尚無技術項目</div>';
+}
+
+/* ---------- DASHBOARD ---------- */
+function studentProgress(s){
+  const items = itemsForLevel(s.level, s.unit);
+  const assess = getAssess().filter(a=>a.studentId===s.id);
+  const done = items.filter(it=>assess.find(a=>a.code===it.code));
+  const passed = done.filter(it=>{ const a=assess.find(x=>x.code===it.code); return a && a.score>=PASS_THRESHOLD; });
+  return {total:items.length, done:done.length, passed:passed.length};
+}
+function renderDashboard(){
+  const students = scopedStudents();
+  const allItems = students.reduce((s,st)=>s+itemsForLevel(st.level, st.unit).length,0);
+  const allDone = students.reduce((s,st)=>s+studentProgress(st).done,0);
+  const pending = allItems - allDone;
+  const passRateVals = students.map(st=>{const p=studentProgress(st); return p.done? (p.passed/p.done*100):null;}).filter(v=>v!==null);
+  const avgPass = passRateVals.length? Math.round(passRateVals.reduce((a,b)=>a+b,0)/passRateVals.length):0;
+
+  document.getElementById('statCards').innerHTML =
+    '<div class="stat"><div class="sl">學生總數</div><div class="sv">'+students.length+'</div></div>'+
+    '<div class="stat b"><div class="sl">應評核項目總數</div><div class="sv">'+allItems+'</div></div>'+
+    '<div class="stat y"><div class="sl">尚未評核項目</div><div class="sv">'+pending+'</div></div>'+
+    '<div class="stat r"><div class="sl">平均通過率</div><div class="sv">'+avgPass+'%</div></div>';
+
+  const clickable = currentRole()==='teacher';
+  document.getElementById('dashTbl').innerHTML = students.length ? students.map(s=>{
+    const p = studentProgress(s);
+    const pct = p.total? Math.round(p.done/p.total*100):0;
+    const passRate = p.done? Math.round(p.passed/p.done*100):null;
+    return '<tr '+(clickable?'class="rowlink" onclick="openStudent(\''+s.id+'\')"':'')+'>'+
+      '<td>'+displayStudentName(s)+'</td>'+
+      '<td>'+(s.school||'—')+'</td>'+
+      '<td><span class="lvtag">'+s.level+'</span><br><span style="font-size:10px;color:var(--t3)">'+(PHASES[s.unit]||s.unit)+'</span></td>'+
+      '<td>'+p.done+' / '+p.total+'<div class="pbar"><i style="width:'+pct+'%"></i></div></td>'+
+      '<td>'+pct+'%</td>'+
+      '<td>'+(passRate===null?'—':(passRate>=100?'<span class="badge bg">'+passRate+'%</span>':'<span class="badge by">'+passRate+'%</span>'))+'</td>'+
+      '<td>'+(clickable?'<button class="btn">評核 →</button>':'')+'</td></tr>';
+  }).join('') : '<tr><td colspan="7" style="text-align:center;color:var(--t3);padding:16px">'+(currentRole()==='school'?'請選擇學校，或此學校目前尚無學生資料':'此梯次目前尚無學生資料，請至「管理平台」新增學生')+'</td></tr>';
+  updateReminderBadge();
+}
+
+/* ---------- STUDENTS LIST ---------- */
+function renderStudents(){
+  const students = scopedStudents();
+  const clickable = currentRole()==='teacher';
+  document.getElementById('studentsTbl').innerHTML = (students.length ? students.map(s=>{
+    const p = studentProgress(s);
+    const remaining = p.total - p.done;
+    return '<tr '+(clickable?'class="rowlink" onclick="openStudent(\''+s.id+'\')"':'')+'>'+
+      '<td>'+displayStudentName(s)+'</td>'+
+      '<td>'+(s.school||'—')+'</td>'+
+      '<td><span class="lvtag">'+s.level+'</span></td>'+
+      '<td>'+(PHASES[s.unit]||s.unit)+'</td>'+
+      '<td>'+(remaining>0?'<span class="badge by">尚有 '+remaining+' 項</span>':'<span class="badge bg">已全部完成</span>')+'</td>'+
+      '<td>'+(clickable?'<button class="btn pri">開始評核</button>':'')+'</td></tr>';
+  }).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--t3);padding:16px">'+(currentRole()==='school'?'請選擇學校，或此學校目前尚無學生資料':'此梯次尚無學生，請至「管理平台 → 學生管理」新增')+'</td></tr>');
+}
+
+/* ---------- STUDENT DETAIL ---------- */
+function openStudent(id){
+  if(currentRole()!=='teacher') return;
+  CUR.studentId = id;
+  const s = getAllStudents().find(x=>x.id===id);
+  document.getElementById('detailName').textContent = s.name;
+  document.getElementById('detailTitle').textContent = s.name+'（'+s.level+' · '+(PHASES[s.unit]||s.unit)+'）';
+  const items = itemsForLevel(s.level, s.unit);
+  document.getElementById('itemList').innerHTML = items.length ? items.map(it=>{
+    const a = assessFor(id, it.code);
+    let badge = '<span class="badge by">未評核</span>';
+    if(a) badge = a.score>=PASS_THRESHOLD ? '<span class="badge bg">通過</span>' : '<span class="badge br">未通過</span>';
+    return '<div class="item-card" onclick="openAssess(\''+id+'\',\''+it.code+'\')">'+
+      '<div class="item-l"><div class="ec">'+it.code+' <span class="evtag ev-'+it.evidence+'">'+EVIDENCE_LABEL[it.evidence]+'</span></div><div class="en">'+it.name+'</div></div>'+
+      '<div>'+badge+'</div></div>';
+  }).join('') : '<div style="text-align:center;color:var(--t3);padding:14px">此科目尚未建立技術項目，請至「管理平台 → 技術項目管理」新增</div>';
+  nav('detail');
+}
+
+/* ---------- ASSESS ITEM ---------- */
+let selectedScore = null;
+function openAssess(studentId, code){
+  CUR.studentId = studentId; CUR.code = code;
+  selectedScore = null;
+  const s = getAllStudents().find(x=>x.id===studentId);
+  const it = itemsForLevel(s.level, s.unit).find(i=>i.code===code);
+  document.getElementById('a-crumb-name').textContent = s.name;
+  document.getElementById('a-crumb-item').textContent = it.name;
+  document.getElementById('a-item-code').textContent = it.code;
+  document.getElementById('a-item-name').textContent = it.name;
+  document.getElementById('a-item-ev').textContent = EVIDENCE_LABEL[it.evidence];
+  document.getElementById('a-item-ev').className = 'evtag ev-'+it.evidence;
+  document.getElementById('a-item-desc').textContent = it.desc;
+  const existing = assessFor(studentId, code);
+  document.getElementById('fb').value = existing ? existing.feedback : '';
+  if(existing) selectedScore = existing.score;
+  document.getElementById('rubric').innerHTML = RUBRIC.map(r=>
+    '<div class="rubric-row">'+
+      '<div class="rlv '+r.lv+' '+(selectedScore==r.lv.slice(1)?'sel':'')+'" onclick="pickScore(\''+r.lv+'\', this)">'+r.label+'</div>'+
+      '<div class="rdesc"><b>'+r.label+'</b><br>'+r.desc+'</div></div>'
+  ).join('');
+  document.getElementById('resultArea').innerHTML = existing ? resultHtml(existing.score) : '';
+  nav('assess');
+}
+function pickScore(lv, el){
+  selectedScore = parseInt(lv.slice(1));
+  document.querySelectorAll('.rlv').forEach(e=>e.classList.remove('sel'));
+  el.classList.add('sel');
+}
+function insertPre(t){ const ta=document.getElementById('fb'); ta.value += (ta.value?'\n':'')+t; }
+function resultHtml(score){
+  const rr = RUBRIC.find(r=>r.lv==='l'+score);
+  const lvName = rr ? rr.label : ('Level'+score);
+  return score>=PASS_THRESHOLD
+    ? '<div class="result-box pass">✅ Entrustment Decision：通過（'+lvName+'，達 Milestone 晉級標準）</div>'
+    : '<div class="result-box fail">⚠️ Entrustment Decision：未通過（'+lvName+'，未達 Level3 晉級標準，建議加強後複評）</div>';
+}
+async function submitAssess(){
+  if(!selectedScore){ alert('請先點選一個評分等級'); return; }
+  const attendingId = document.getElementById('attSel').value;
+  DB.assessments = DB.assessments.filter(a=>!(a.studentId===CUR.studentId && a.code===CUR.code));
+  DB.assessments.push({studentId:CUR.studentId, code:CUR.code, score:selectedScore, feedback:document.getElementById('fb').value.trim(), attendingId, date:new Date().toISOString().slice(0,10)});
+  await persist();
+  document.getElementById('resultArea').innerHTML = resultHtml(selectedScore);
+  updateReminderBadge();
+}
+
+/* ---------- ANALYTICS ---------- */
+function techniqueOf(code){ return getTechniques().find(t=>t.id===code); }
+function bar(label, value, max, color){
+  const pct = max>0 ? Math.round(value/max*100) : 0;
+  return '<div class="barrow"><div class="lbl" title="'+label+'">'+label+'</div><div class="track"><i style="width:'+pct+'%;background:'+(color||'var(--acc)')+'"></i></div><div class="val">'+value+'</div></div>';
+}
+function renderAnalytics(){
+  const students = scopedStudents();
+  const studentIds = new Set(students.map(s=>s.id));
+  const assess = getAssess().filter(a=>studentIds.has(a.studentId));
+
+  const total = assess.length;
+  const passCount = assess.filter(a=>a.score>=PASS_THRESHOLD).length;
+  const passRate = total ? Math.round(passCount/total*100) : 0;
+  const avgLevel = total ? Math.round(assess.reduce((s,a)=>s+a.score,0)/total*10)/10 : 0;
+
+  document.getElementById('anlCards').innerHTML =
+    '<div class="stat"><div class="sl">評量總筆數</div><div class="sv">'+total+'</div></div>'+
+    '<div class="stat b"><div class="sl">平均信賴等級</div><div class="sv">'+avgLevel+'</div></div>'+
+    '<div class="stat y"><div class="sl">整體通過率</div><div class="sv">'+passRate+'%</div></div>'+
+    '<div class="stat"><div class="sl">涵蓋學生數</div><div class="sv">'+new Set(assess.map(a=>a.studentId)).size+'</div></div>';
+
+  // usage by method
+  const methodCounts = {};
+  assess.forEach(a=>{ const t=techniqueOf(a.code); const m = t? t.method : '未知'; methodCounts[m]=(methodCounts[m]||0)+1; });
+  const maxMethod = Math.max(1, ...Object.values(methodCounts));
+  document.getElementById('anlMethodUsage').innerHTML = Object.keys(methodCounts).length
+    ? Object.entries(methodCounts).map(([k,v])=>bar(EVIDENCE_LABEL[k]||k, v, maxMethod)).join('')
+    : '<div style="color:var(--t3);font-size:12px;text-align:center;padding:10px">尚無資料</div>';
+
+  // usage by phase
+  const phaseCounts = {};
+  assess.forEach(a=>{ const t=techniqueOf(a.code); const u = t? t.unit : '未知'; phaseCounts[u]=(phaseCounts[u]||0)+1; });
+  const maxPhase = Math.max(1, ...Object.values(phaseCounts));
+  document.getElementById('anlPhaseUsage').innerHTML = Object.keys(phaseCounts).length
+    ? Object.entries(phaseCounts).map(([k,v])=>bar(PHASES[k]||k, v, maxPhase, 'var(--a2)')).join('')
+    : '<div style="color:var(--t3);font-size:12px;text-align:center;padding:10px">尚無資料</div>';
+
+  // usage by technique (top10)
+  const techCounts = {};
+  assess.forEach(a=>{ techCounts[a.code]=(techCounts[a.code]||0)+1; });
+  const techEntries = Object.entries(techCounts).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  const maxTech = Math.max(1, ...techEntries.map(e=>e[1]));
+  document.getElementById('anlTechUsage').innerHTML = techEntries.length
+    ? techEntries.map(([code,v])=>{ const t=techniqueOf(code); return bar(t?t.name:code, v, maxTech, 'var(--purple)'); }).join('')
+    : '<div style="color:var(--t3);font-size:12px;text-align:center;padding:10px">尚無資料</div>';
+
+  // usage by teacher (attending)
+  const teacherCounts = {};
+  assess.forEach(a=>{ const nm = a.attendingId ? teacherName(a.attendingId) : '未指定'; teacherCounts[nm]=(teacherCounts[nm]||0)+1; });
+  const teacherEntries = Object.entries(teacherCounts).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  const maxTeacher = Math.max(1, ...teacherEntries.map(e=>e[1]));
+  document.getElementById('anlTeacherUsage').innerHTML = teacherEntries.length
+    ? teacherEntries.map(([k,v])=>bar(k, v, maxTeacher, 'var(--a3)')).join('')
+    : '<div style="color:var(--t3);font-size:12px;text-align:center;padding:10px">尚無資料</div>';
+
+  // proficiency by method
+  const methodLevelSum = {}, methodLevelN = {};
+  assess.forEach(a=>{ const t=techniqueOf(a.code); const m=t?t.method:'未知'; methodLevelSum[m]=(methodLevelSum[m]||0)+a.score; methodLevelN[m]=(methodLevelN[m]||0)+1; });
+  document.getElementById('anlMethodLevel').innerHTML = Object.keys(methodLevelN).length
+    ? Object.keys(methodLevelN).map(k=>bar(EVIDENCE_LABEL[k]||k, Math.round(methodLevelSum[k]/methodLevelN[k]*10)/10, 5, 'var(--acc)')).join('')
+    : '<div style="color:var(--t3);font-size:12px;text-align:center;padding:10px">尚無資料</div>';
+
+  // proficiency by technique (top10 by usage, show avg level)
+  document.getElementById('anlTechLevel').innerHTML = techEntries.length
+    ? techEntries.map(([code])=>{
+        const recs = assess.filter(a=>a.code===code);
+        const avg = Math.round(recs.reduce((s,a)=>s+a.score,0)/recs.length*10)/10;
+        const t = techniqueOf(code);
+        return bar(t?t.name:code, avg, 5, 'var(--a2)');
+      }).join('')
+    : '<div style="color:var(--t3);font-size:12px;text-align:center;padding:10px">尚無資料</div>';
+
+  // level distribution 1-5
+  const levelCounts = {1:0,2:0,3:0,4:0,5:0};
+  assess.forEach(a=>{ if(levelCounts[a.score]!==undefined) levelCounts[a.score]++; });
+  const maxLv = Math.max(1, ...Object.values(levelCounts));
+  const lvColors = {1:'#ef4444',2:'#f97316',3:'#eab308',4:'#22c55e',5:'#00c9a7'};
+  document.getElementById('anlLevelDist').innerHTML = Object.keys(levelCounts).map(k=>bar('Level '+k, levelCounts[k], maxLv, lvColors[k])).join('');
+}
+
+/* ---------- DATA EXPORT ---------- */
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+function csvEscape(v){
+  v = (v===null||v===undefined) ? '' : String(v);
+  if(/[",\n]/.test(v)) v = '"'+v.replace(/"/g,'""')+'"';
+  return v;
+}
+function downloadCsv(filename, rows){
+  const csv = '\uFEFF' + rows.map(r=>r.map(csvEscape).join(',')).join('\r\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+}
+function exportStudentsCsv(){
+  const rows = [['姓名','學校','學制/年級','實習科目','梯次','負責老師']];
+  getAllStudents().forEach(s=>rows.push([s.name, s.school, s.level, PHASES[s.unit]||s.unit, s.cohort, s.teacherId?teacherName(s.teacherId):'']));
+  downloadCsv('學生名冊_'+todayStr()+'.csv', rows);
+}
+function exportAssessCsv(){
+  const rows = [['學生','學校','實習科目','技術項目','評量方法','信賴等級','評核老師','日期','質性回饋']];
+  getAssess().forEach(a=>{
+    const s = getAllStudents().find(x=>x.id===a.studentId);
+    const t = techniqueOf(a.code);
+    rows.push([
+      s?s.name:a.studentId,
+      s?s.school:'',
+      t?(PHASES[t.unit]||t.unit):'',
+      t?t.name:a.code,
+      t?(EVIDENCE_LABEL[t.method]||t.method):'',
+      a.score,
+      a.attendingId?teacherName(a.attendingId):'',
+      a.date,
+      a.feedback||''
+    ]);
+  });
+  downloadCsv('評核紀錄_'+todayStr()+'.csv', rows);
+}
+function exportFullJson(){
+  const blob = new Blob([JSON.stringify(DB, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '系統完整備份_'+todayStr()+'.json';
+  a.click();
+}
+
+/* ---------- REMIND ---------- */
+function pendingList(){
+  const students = scopedStudents();
+  const rows = [];
+  students.forEach(s=>{
+    const items = itemsForLevel(s.level, s.unit);
+    const missing = items.filter(it=>!assessFor(s.id, it.code));
+    if(missing.length) rows.push({student:s, missing:missing});
+  });
+  return rows;
+}
+function renderRemind(){
+  const rows = pendingList();
+  document.getElementById('remindTbl').innerHTML = rows.length ? rows.map(r=>
+    '<tr><td>'+r.student.name+'</td><td>'+(r.student.school||'—')+'<br><span style="font-size:10px;color:var(--t3)">'+r.student.level+'</span></td>'+
+    '<td>'+r.missing.map(m=>m.code).join('、')+'</td><td>'+(r.student.teacherId? teacherName(r.student.teacherId):'未配對')+'</td></tr>'
+  ).join('') : '<tr><td colspan="4" style="text-align:center;color:var(--t3)">🎉 所有學生評核項目皆已完成</td></tr>';
+  document.getElementById('mailPreview').classList.add('hidden');
+  document.getElementById('mailSendArea').innerHTML = '';
+}
+function updateReminderBadge(){
+  document.getElementById('nb-remind').textContent = pendingList().length;
+}
+function genReminder(){
+  const rows = pendingList();
+  if(!rows.length){ alert('目前沒有未完成的評核項目，不需提醒。'); return; }
+  const byTeacher = {};
+  const emails = new Set();
+  rows.forEach(r=>{
+    const key = r.student.teacherId ? teacherName(r.student.teacherId) : '未配對老師';
+    if(!byTeacher[key]) byTeacher[key]=[];
+    byTeacher[key].push(r.student.name+'（'+r.student.level+'）：'+r.missing.map(m=>m.code+' '+m.name).join('、'));
+    const em = teacherEmail(r.student.teacherId);
+    if(em) emails.add(em);
+  });
+  const body = Object.entries(byTeacher).map(function(e){ return '【'+e[0]+'】\n'+e[1].join('\n'); }).join('\n\n');
+  const fullMsg = '以下學生尚有評核項目未完成，請於近期協助完成評核：\n\n'+body+'\n\n謝謝配合！';
+  document.getElementById('mailPreview').textContent = fullMsg;
+  document.getElementById('mailPreview').classList.remove('hidden');
+  const subject = encodeURIComponent('【護理實習評核提醒】尚有未完成評核項目');
+  const bodyEnc = encodeURIComponent(fullMsg);
+  const to = Array.from(emails).join(',');
+  document.getElementById('mailSendArea').innerHTML = '<div style="margin-top:10px"><a class="btn pri" style="text-decoration:none;display:inline-block" href="mailto:'+to+'?subject='+subject+'&body='+bodyEnc+'">📧 開啟郵件軟體寄送'+(to?'（收件人：'+to+'）':'')+'</a></div>';
+}
+
+/* ---------- INIT ---------- */
+(async function init(){
+  await loadDB();
+  if(!FIREBASE_CONFIGURED) document.getElementById('configWarning').classList.remove('hidden');
+  initCohortSel();
+  initAttSel();
+  populateViewSchoolSel();
+  document.getElementById('cohortSel').addEventListener('change', renderDashboard);
+  onRoleChange();
+  nav('dashboard');
+  document.getElementById('loadingOverlay').style.display = 'none';
+})();
+</script>
+</body>
+</html>
