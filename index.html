@@ -306,6 +306,16 @@ textarea{min-height:70px;resize:vertical}
             <tbody id="teacherTbl"></tbody>
           </table>
         </div>
+        <div class="card">
+          <div class="ct"><span><span class="dot"></span>手動配對學生給老師</span></div>
+          <p style="font-size:11.5px;color:var(--t2);margin-bottom:10px">選擇一位老師，再勾選要配對給這位老師的學生（可複選，按住 Ctrl / Cmd 多選）。儲存後會覆蓋這位老師目前的學生名單。</p>
+          <div class="g2">
+            <div class="fg"><label>選擇老師</label><select id="assign-teacher" onchange="loadAssignStudents()"></select></div>
+            <div class="fg"><label>選擇學生（可複選）</label><select id="assign-students" multiple size="8"></select></div>
+          </div>
+          <button class="btn pri" onclick="saveTeacherAssignment()">💾 儲存配對</button>
+          <span id="assignResult" style="margin-left:10px;font-size:12px;color:var(--acc)"></span>
+        </div>
       </div>
 
       <!-- STUDENT MGMT -->
@@ -644,6 +654,7 @@ function renderAdmin(){
   fillTechniqueSelects();
   renderTechniqueList();
   previewAutoForms();
+  initAssignUI();
 }
 function fillSchoolSelects(){
   const schools = getSchools();
@@ -711,6 +722,42 @@ async function delTeacher(id){
   DB.students.forEach(s=>{ if(s.teacherId===id) s.teacherId=''; });
   await persist();
   renderTeacherTbl(); initAttSel(); renderStudentAdminTbl(); renderStudents(); renderDashboard();
+}
+
+/* ---------- MANUAL TEACHER ↔ STUDENT ASSIGNMENT ---------- */
+function initAssignUI(){
+  const teachers = getTeachers();
+  const sel = document.getElementById('assign-teacher');
+  const cur = sel.value;
+  sel.innerHTML = teachers.length
+    ? teachers.map(t=>'<option value="'+t.id+'">'+t.name+'（'+t.school+' · '+(PHASES[t.subject]||t.subject)+'）</option>').join('')
+    : '<option value="">— 尚無老師，請先新建 —</option>';
+  if(teachers.some(t=>t.id===cur)) sel.value = cur;
+  document.getElementById('assignResult').textContent = '';
+  loadAssignStudents();
+}
+function loadAssignStudents(){
+  const teacherId = document.getElementById('assign-teacher').value;
+  const sel = document.getElementById('assign-students');
+  const students = getAllStudents();
+  sel.innerHTML = students.map(s=>
+    '<option value="'+s.id+'"'+(s.teacherId===teacherId?' selected':'')+'>'+s.name+'（'+(s.school||'—')+' · '+(PHASES[s.unit]||s.unit)+'）'+(s.teacherId && s.teacherId!==teacherId ? '　[已配對:'+teacherName(s.teacherId)+']' : '')+'</option>'
+  ).join('');
+  document.getElementById('assignResult').textContent = '';
+}
+async function saveTeacherAssignment(){
+  const teacherId = document.getElementById('assign-teacher').value;
+  if(!teacherId){ alert('請先建立至少一位老師'); return; }
+  const selectedIds = new Set(Array.from(document.getElementById('assign-students').selectedOptions).map(o=>o.value));
+  DB.students.forEach(s=>{
+    if(selectedIds.has(s.id)) s.teacherId = teacherId;
+    else if(s.teacherId === teacherId) s.teacherId = '';
+  });
+  const t = DB.teachers.find(x=>x.id===teacherId);
+  if(t) t.studentIds = Array.from(selectedIds);
+  await persist();
+  renderTeacherTbl(); renderStudentAdminTbl(); renderStudents(); renderDashboard(); loadAssignStudents();
+  document.getElementById('assignResult').textContent = '✅ 已儲存，共配對 '+selectedIds.size+' 位學生';
 }
 function renderTeacherTbl(){
   const sel = document.getElementById('t-students');
