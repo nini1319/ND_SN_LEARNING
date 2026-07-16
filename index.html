@@ -7,6 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <style>
 :root{
   --bg:#0b1121;--bg2:#111827;--bg3:#1a2235;--card:#151d2e;
@@ -112,6 +113,19 @@ textarea{min-height:70px;resize:vertical}
 .savebadge{position:fixed;bottom:16px;right:16px;background:var(--bg2);border:1px solid var(--acc);color:var(--acc);font-size:11px;padding:6px 13px;border-radius:20px;z-index:500;opacity:0;transition:opacity .2s;font-family:'DM Mono',monospace}
 .savebadge.show{opacity:1}
 .roletag{font-size:10px;padding:2px 8px;border-radius:10px;border:1px solid var(--border);color:var(--t2)}
+#authOverlay{position:fixed;inset:0;background:var(--bg);z-index:9997;display:flex;align-items:center;justify-content:center}
+.authbox{width:340px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:26px}
+.authbox h2{font-size:16px;margin-bottom:4px}
+.authbox .sub{font-size:11px;color:var(--t3);margin-bottom:18px}
+.authtabs{display:flex;gap:4px;margin-bottom:16px;background:var(--bg3);border-radius:8px;padding:3px}
+.authtab{flex:1;text-align:center;padding:6px 0;border-radius:6px;font-size:12px;color:var(--t2);cursor:pointer}
+.authtab.active{background:var(--acc);color:#04241f;font-weight:600}
+.authview{display:none}
+.authview.active{display:block}
+.autherr{font-size:11.5px;color:var(--danger);margin:8px 0;min-height:14px}
+.authok{font-size:11.5px;color:var(--acc);margin:8px 0;min-height:14px}
+.guestlink{display:block;text-align:center;margin-top:16px;font-size:11.5px;color:var(--t3);cursor:pointer;text-decoration:underline}
+.acctbar{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--t2)}
 </style>
 </head>
 <body>
@@ -120,6 +134,43 @@ textarea{min-height:70px;resize:vertical}
 <div id="configWarning" class="hidden" style="position:fixed;top:0;left:0;right:0;background:#7c2d12;color:#fed7aa;font-size:12px;text-align:center;padding:8px 12px;z-index:9998;font-family:'DM Mono',monospace">
   ⚠️ 尚未設定 Firebase，目前資料只存在你自己的瀏覽器、不會與他人共享。請依 README 設定 firebaseConfig。
 </div>
+
+<div id="authOverlay" class="hidden">
+  <div class="authbox">
+    <h2>護理實習學生評核系統</h2>
+    <div class="sub">請使用管理者已建立好的 Email 登入</div>
+    <div class="authtabs">
+      <div class="authtab active" id="authtab-login" onclick="switchAuthView('login')">登入</div>
+      <div class="authtab" id="authtab-register" onclick="switchAuthView('register')">註冊</div>
+      <div class="authtab" id="authtab-forgot" onclick="switchAuthView('forgot')">忘記密碼</div>
+    </div>
+
+    <div class="authview active" id="authview-login">
+      <div class="fg"><label>Email</label><input id="login-email" type="email" placeholder="you@example.com"></div>
+      <div class="fg"><label>密碼</label><input id="login-pass" type="password" placeholder="••••••••"></div>
+      <div class="autherr" id="login-err"></div>
+      <button class="btn pri" style="width:100%" onclick="doLogin()">登入</button>
+    </div>
+
+    <div class="authview" id="authview-register">
+      <div class="fg"><label>Email<br><span style="color:var(--t3);font-weight:400">請使用管理者幫你建立老師資料時的同一組 Email</span></label><input id="reg-email" type="email" placeholder="you@example.com"></div>
+      <div class="fg"><label>設定密碼（至少 6 碼）</label><input id="reg-pass" type="password" placeholder="••••••••"></div>
+      <div class="fg"><label>再輸入一次密碼</label><input id="reg-pass2" type="password" placeholder="••••••••"></div>
+      <div class="autherr" id="reg-err"></div>
+      <button class="btn pri" style="width:100%" onclick="doRegister()">註冊帳號</button>
+    </div>
+
+    <div class="authview" id="authview-forgot">
+      <div class="fg"><label>Email</label><input id="forgot-email" type="email" placeholder="you@example.com"></div>
+      <div class="autherr" id="forgot-err"></div>
+      <div class="authok" id="forgot-ok"></div>
+      <button class="btn pri" style="width:100%" onclick="doForgotPassword()">寄送重設密碼信</button>
+    </div>
+
+    <div class="guestlink" onclick="enterGuestMode()">不登入，以合作學校身分查看（去識別化）→</div>
+  </div>
+</div>
+
 <div class="savebadge" id="saveBadge">已儲存</div>
 
 <div class="sidebar">
@@ -140,17 +191,16 @@ textarea{min-height:70px;resize:vertical}
   <div class="topbar">
     <div class="tbt" id="tbt">儀表板</div>
     <div class="tbr">
-      <label>身分</label>
-      <select id="roleSel" onchange="onRoleChange()">
-        <option value="teacher">老師端（完整權限）</option>
-        <option value="school">學校端（去識別化）</option>
-      </select>
+      <div class="acctbar">
+        <span class="roletag" id="acctBadge">—</span>
+        <button class="btn sm hidden" id="logoutBtn" onclick="doLogout()">登出</button>
+      </div>
       <label id="viewSchoolLabel" class="hidden">檢視學校</label>
       <select id="viewSchoolSel" class="hidden" onchange="renderAll()"></select>
       <label>實習梯次</label>
       <select id="cohortSel" onchange="renderAll()"></select>
-      <label id="attSelLabel">目前登入老師</label>
-      <select id="attSel" onchange="renderAll()"></select>
+      <label id="attSelLabel" class="hidden">目前登入老師</label>
+      <select id="attSel" class="hidden" onchange="renderAll()"></select>
     </div>
   </div>
 
@@ -285,12 +335,22 @@ textarea{min-height:70px;resize:vertical}
       <!-- TEACHER MGMT -->
       <div class="subcard active" id="sub-teacher">
         <div class="card">
-          <div class="ct"><span><span class="dot"></span>新建老師</span></div>
+          <div class="ct"><span><span class="dot"></span>批次新增老師（例如：病房護理長/督導/臨床實習教師）</span></div>
+          <p style="font-size:11.5px;color:var(--t2);margin-bottom:8px">每行一位，用 Tab 或逗號分隔：<b>工號,姓名,病房/單位,職稱</b>。系統會自動用 工號@s.tmu.edu.tw 當帳號 Email，科目預設為「綜合實習」（用來配對選習學生），可依病房自動連動。</p>
+          <textarea id="bulk-teachers" rows="6" placeholder="08284,鄭莉珍,OR,護理長&#10;08392,余汝婉,208病房,副護理長"></textarea>
+          <button class="btn pri" style="margin-top:8px" onclick="submitBulkTeachers()">＋ 批次新增</button>
+          <button class="btn" style="margin-top:8px" onclick="rematchAllStudents()">🔄 重新自動配對所有學生（依病房/學校）</button>
+          <div id="bulkTeacherResult" style="margin-top:8px;font-size:12px"></div>
+        </div>
+        <div class="card">
+          <div class="ct"><span><span class="dot"></span>新建單一老師</span></div>
           <div class="g2">
             <div class="fg"><label>學校<span style="color:var(--danger)">*</span></label><select id="t-school"></select></div>
             <div class="fg"><label>負責科目 / Phase<span style="color:var(--danger)">*</span></label><select id="t-subject"></select></div>
             <div class="fg"><label>老師姓名<span style="color:var(--danger)">*</span></label><input id="t-name" placeholder="例：林慧珍"></div>
             <div class="fg"><label>Email<span style="color:var(--danger)">*</span></label><input id="t-email" placeholder="teacher@example.com"></div>
+            <div class="fg"><label>病房 / 單位（選習用，選填）</label><input id="t-ward" placeholder="例：7C骨科病房"></div>
+            <div class="fg"><label>職稱（選填）</label><input id="t-title" placeholder="例：護理長"></div>
             <div class="fg"><label>實習期間（起）</label><input id="t-start" type="date"></div>
             <div class="fg"><label>實習期間（迄）</label><input id="t-end" type="date"></div>
           </div>
@@ -560,13 +620,31 @@ function assessFor(studentId, code){
 }
 function teacherName(id){ const t=getTeachers().find(x=>x.id===id); return t? (t.name+'（'+t.school+'）') : (id||'—'); }
 function teacherEmail(id){ const t=getTeachers().find(x=>x.id===id); return t? t.email : ''; }
-function autoMatchTeacher(school, subject){
+function autoMatchTeacher(school, subject, ward){
+  if(ward){
+    const byWard = getTeachers().find(x=>x.ward && x.ward.trim() && x.ward.trim()===ward.trim());
+    if(byWard) return byWard.id;
+  }
   const t = getTeachers().find(x=>x.school===school && x.subject===subject);
   return t ? t.id : '';
 }
 
-/* ---------- ROLE / VIEW SCOPE ---------- */
-function currentRole(){ return document.getElementById('roleSel').value; }
+/* ---------- AUTH / ROLE / VIEW SCOPE ---------- */
+const ADMIN_EMAILS = ['icu001319@gmail.com', '24574@s.tmu.edu.tw'];
+let fbAuth = null;
+let currentUser = null;
+
+function myTeacherRecord(){
+  if(!currentUser) return null;
+  return getTeachers().find(t=>t.email && t.email.toLowerCase()===currentUser.email.toLowerCase()) || null;
+}
+function currentRole(){
+  if(!FIREBASE_CONFIGURED) return 'admin'; // no backend configured yet → full preview mode, no login required
+  if(!currentUser) return 'school'; // not logged in → guest / partner-school browsing
+  if(ADMIN_EMAILS.includes(currentUser.email)) return 'admin';
+  const t = myTeacherRecord();
+  return t ? 'teacher' : 'unlinked';
+}
 function currentViewSchool(){ return document.getElementById('viewSchoolSel').value; }
 function maskName(name){ return (name && name[0] ? name[0] : '') + '○○'; }
 function displayStudentName(s){ return currentRole()==='school' ? maskName(s.name) : s.name; }
@@ -574,23 +652,39 @@ function displayStudentName(s){ return currentRole()==='school' ? maskName(s.nam
 // students visible given current role + scope
 function scopedStudents(){
   const all = getStudents();
-  if(currentRole()==='school'){
+  const role = currentRole();
+  if(role==='school'){
     const sc = currentViewSchool();
     return sc ? all.filter(s=>s.school===sc) : [];
   }
-  return all;
+  if(role==='teacher'){
+    const t = myTeacherRecord();
+    return t ? all.filter(s=>s.teacherId===t.id) : [];
+  }
+  if(role==='unlinked') return [];
+  return all; // admin
 }
 
-function onRoleChange(){
+function updateRoleUI(){
   const role = currentRole();
+  const isAdmin = role==='admin';
   const isSchool = role==='school';
+  const isTeacher = role==='teacher';
   document.getElementById('viewSchoolLabel').classList.toggle('hidden', !isSchool);
   document.getElementById('viewSchoolSel').classList.toggle('hidden', !isSchool);
-  document.getElementById('attSelLabel').classList.toggle('hidden', isSchool);
-  document.getElementById('attSel').classList.toggle('hidden', isSchool);
-  document.querySelector('.ni[data-page="admin"]').classList.toggle('hidden', isSchool);
+  document.getElementById('attSelLabel').classList.toggle('hidden', !isAdmin);
+  document.getElementById('attSel').classList.toggle('hidden', !isAdmin);
+  document.querySelector('.ni[data-page="admin"]').classList.toggle('hidden', !isAdmin);
   document.querySelector('.ni[data-page="remind"]').classList.toggle('hidden', isSchool);
-  if(isSchool && (currentPage()==='admin' || currentPage()==='remind' || currentPage()==='assess')){
+  document.getElementById('logoutBtn').classList.toggle('hidden', !currentUser);
+
+  const badge = document.getElementById('acctBadge');
+  if(isAdmin) badge.textContent = '管理者：'+currentUser.email;
+  else if(isTeacher) badge.textContent = '老師：'+(myTeacherRecord()?myTeacherRecord().name:'');
+  else if(role==='unlinked') badge.textContent = '此帳號尚未連結教師資料，請聯絡管理者';
+  else badge.textContent = '訪客（合作學校）';
+
+  if((currentPage()==='admin' && !isAdmin) || (currentPage()==='assess' && !isAdmin && !isTeacher)){
     nav('dashboard');
   } else {
     renderAll();
@@ -603,6 +697,76 @@ function populateViewSchoolSel(){
 function currentPage(){
   const p = document.querySelector('.page.active');
   return p ? p.id.replace('page-','') : 'dashboard';
+}
+
+/* ---------- AUTHENTICATION ---------- */
+function switchAuthView(view){
+  document.querySelectorAll('.authtab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.authview').forEach(v=>v.classList.remove('active'));
+  document.getElementById('authtab-'+view).classList.add('active');
+  document.getElementById('authview-'+view).classList.add('active');
+}
+function showAuthOverlay(){ document.getElementById('authOverlay').classList.remove('hidden'); }
+function hideAuthOverlay(){ document.getElementById('authOverlay').classList.add('hidden'); }
+async function doLogin(){
+  const email = document.getElementById('login-email').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  const err = document.getElementById('login-err');
+  err.textContent = '';
+  if(!email||!pass){ err.textContent='請輸入 Email 與密碼'; return; }
+  try{
+    await fbAuth.signInWithEmailAndPassword(email, pass);
+  }catch(e){
+    err.textContent = authErrMsg(e);
+  }
+}
+async function doRegister(){
+  const email = document.getElementById('reg-email').value.trim();
+  const pass = document.getElementById('reg-pass').value;
+  const pass2 = document.getElementById('reg-pass2').value;
+  const err = document.getElementById('reg-err');
+  err.textContent = '';
+  if(!email||!pass){ err.textContent='請輸入 Email 與密碼'; return; }
+  if(pass.length<6){ err.textContent='密碼至少需要 6 碼'; return; }
+  if(pass!==pass2){ err.textContent='兩次輸入的密碼不一致'; return; }
+  try{
+    await fbAuth.createUserWithEmailAndPassword(email, pass);
+  }catch(e){
+    err.textContent = authErrMsg(e);
+  }
+}
+async function doForgotPassword(){
+  const email = document.getElementById('forgot-email').value.trim();
+  const err = document.getElementById('forgot-err');
+  const ok = document.getElementById('forgot-ok');
+  err.textContent = ''; ok.textContent = '';
+  if(!email){ err.textContent='請輸入 Email'; return; }
+  try{
+    await fbAuth.sendPasswordResetEmail(email);
+    ok.textContent = '已寄出重設密碼信件到 '+email+'，請至信箱查收（含垃圾郵件夾）。';
+  }catch(e){
+    err.textContent = authErrMsg(e);
+  }
+}
+async function doLogout(){
+  await fbAuth.signOut();
+}
+function enterGuestMode(){
+  hideAuthOverlay();
+  currentUser = null;
+  updateRoleUI();
+}
+function authErrMsg(e){
+  const map = {
+    'auth/invalid-email':'Email 格式不正確',
+    'auth/user-not-found':'找不到這個帳號，請先註冊',
+    'auth/wrong-password':'密碼錯誤',
+    'auth/email-already-in-use':'這個 Email 已經註冊過了，請直接登入',
+    'auth/weak-password':'密碼太簡單，至少需要 6 碼',
+    'auth/invalid-credential':'帳號或密碼不正確',
+    'auth/network-request-failed':'網路連線失敗，請檢查網路',
+  };
+  return map[e.code] || ('發生錯誤：'+e.message);
 }
 
 /* ---------- NAV ---------- */
@@ -689,32 +853,77 @@ async function submitTeacher(){
   const subject = document.getElementById('t-subject').value;
   const name = document.getElementById('t-name').value.trim();
   const email = document.getElementById('t-email').value.trim();
+  const ward = document.getElementById('t-ward').value.trim();
+  const title = document.getElementById('t-title').value.trim();
   const start = document.getElementById('t-start').value;
   const end = document.getElementById('t-end').value;
   const manualIds = Array.from(document.getElementById('t-students').selectedOptions).map(o=>o.value);
   if(!school||!subject||!name||!email){ alert('請填寫學校、負責科目、姓名與 Email'); return; }
   const newTeacherId = 't'+Date.now();
 
-  // 自動連動：把之前用「指導老師」文字匯入、姓名與學校都相符、還沒配對帳號的學生，自動連到這位新老師
+  // 自動連動：把姓名相符（指導老師欄位）或病房相符、還沒配對帳號的學生，自動連到這位新老師
   const autoLinked = [];
   DB.students.forEach(s=>{
-    const nameMatches = s.mentorName && s.mentorName.trim() === name;
-    const schoolMatches = !s.school || s.school === school;
-    if(nameMatches && schoolMatches && !s.teacherId){
+    if(s.teacherId) return;
+    const nameMatches = s.mentorName && s.mentorName.trim() === name && (!s.school || s.school === school);
+    const wardMatches = ward && s.ward && s.ward.trim() === ward;
+    if(nameMatches || wardMatches){
       s.teacherId = newTeacherId;
       autoLinked.push(s.id);
     }
   });
   const studentIds = Array.from(new Set([...manualIds, ...autoLinked]));
 
-  DB.teachers.push({id:newTeacherId, school, subject, name, email, periodStart:start, periodEnd:end, studentIds});
+  DB.teachers.push({id:newTeacherId, school, subject, name, email, ward, title, periodStart:start, periodEnd:end, studentIds});
   await persist();
   document.getElementById('t-name').value=''; document.getElementById('t-email').value='';
+  document.getElementById('t-ward').value=''; document.getElementById('t-title').value='';
   document.getElementById('t-start').value=''; document.getElementById('t-end').value='';
   renderTeacherTbl(); initAttSel(); renderStudentAdminTbl(); renderStudents(); renderDashboard();
   if(autoLinked.length){
-    alert('已自動連動 '+autoLinked.length+' 位「指導老師：'+name+'」的既有學生到這個新老師帳號。');
+    alert('已自動連動 '+autoLinked.length+' 位學生到這個新老師帳號。');
   }
+}
+
+/* ---------- BULK TEACHER IMPORT (ward-based, for 選習/comprehensive-practicum head nurses) ---------- */
+async function submitBulkTeachers(){
+  const raw = document.getElementById('bulk-teachers').value.trim();
+  if(!raw){ alert('請先貼上老師名單'); return; }
+  const lines = raw.split('\n').map(l=>l.trim()).filter(l=>l);
+  let added = 0, skipped = 0;
+  lines.forEach(line=>{
+    const parts = line.split(/\t|,/).map(p=>p.trim());
+    if(parts.length < 3){ skipped++; return; }
+    const [empId, name, ward, title] = parts;
+    if(!empId || !name){ skipped++; return; }
+    const email = empId + '@s.tmu.edu.tw';
+    if(DB.teachers.some(t=>t.email.toLowerCase()===email.toLowerCase())){ skipped++; return; }
+    const newId = 't'+Date.now()+Math.random().toString(36).slice(2,6);
+    DB.teachers.push({
+      id:newId, school:'雙和醫院', subject:'綜合實習', name, email,
+      ward: ward||'', title: title||'', periodStart:'', periodEnd:'', studentIds:[]
+    });
+    added++;
+  });
+  await persist();
+  document.getElementById('bulk-teachers').value = '';
+  renderTeacherTbl(); initAttSel();
+  document.getElementById('bulkTeacherResult').innerHTML = '<span style="color:var(--acc)">✅ 已新增 '+added+' 位老師'+(skipped?'，略過 '+skipped+' 行（格式不完整或 Email 已存在）':'')+'</span>';
+  await rematchAllStudents(true);
+}
+async function rematchAllStudents(silent){
+  let matched = 0;
+  DB.students.forEach(s=>{
+    if(s.teacherId) return;
+    const id = autoMatchTeacher(s.school, s.unit, s.ward);
+    if(id){ s.teacherId = id; matched++; }
+  });
+  if(matched){
+    DB.teachers.forEach(t=>{ t.studentIds = DB.students.filter(s=>s.teacherId===t.id).map(s=>s.id); });
+    await persist();
+    renderTeacherTbl(); renderStudentAdminTbl(); renderStudents(); renderDashboard();
+  }
+  if(!silent) alert('重新配對完成，共配對 '+matched+' 位原本未配對的學生。');
 }
 async function delTeacher(id){
   if(!confirm('確定刪除此老師？（已連動的學生會變回未配對，不會被刪除）')) return;
@@ -764,7 +973,7 @@ function renderTeacherTbl(){
   sel.innerHTML = getAllStudents().map(s=>'<option value="'+s.id+'">'+s.name+'（'+s.school+'）</option>').join('');
   const teachers = getTeachers();
   document.getElementById('teacherTbl').innerHTML = teachers.length ? teachers.map(t=>
-    '<tr><td>'+t.name+'</td><td>'+t.school+'</td><td>'+(PHASES[t.subject]||t.subject)+'</td><td>'+t.email+'</td>'+
+    '<tr><td>'+t.name+(t.title?' <span style="color:var(--t3);font-size:10px">'+t.title+'</span>':'')+'</td><td>'+t.school+(t.ward?'<br><span style="font-size:10px;color:var(--t3)">'+t.ward+'</span>':'')+'</td><td>'+(PHASES[t.subject]||t.subject)+'</td><td>'+t.email+'</td>'+
     '<td>'+(t.periodStart||'—')+' ~ '+(t.periodEnd||'—')+'</td><td>'+(t.studentIds||[]).length+'</td>'+
     '<td><button class="btn sm" onclick="delTeacher(\''+t.id+'\')">刪除</button></td></tr>'
   ).join('') : '<tr><td colspan="7" style="text-align:center;color:var(--t3);padding:14px">尚無老師資料</td></tr>';
@@ -789,7 +998,7 @@ async function submitStudent(){
   const end = document.getElementById('s-end').value;
   let teacherId = document.getElementById('s-teacher').value;
   if(!school||!name||!system||!unit){ alert('請至少填寫學校、姓名、學制、實習科目'); return; }
-  if(!teacherId) teacherId = autoMatchTeacher(school, unit);
+  if(!teacherId) teacherId = autoMatchTeacher(school, unit, ward);
   DB.students.push({id:'s'+Date.now()+Math.random().toString(36).slice(2,6), name, no, school, level:system+(grade?' / '+grade:''), unit, ward, mentorName, periodStart:start, periodEnd:end, cohort:(document.getElementById('cohortSel').value||COHORTS[0]), teacherId});
   await persist();
   ['s-name','s-no','s-ward','s-mentorname','s-start','s-end'].forEach(id=>document.getElementById(id).value='');
@@ -891,7 +1100,7 @@ function renderDashboard(){
     '<div class="stat y"><div class="sl">尚未評核項目</div><div class="sv">'+pending+'</div></div>'+
     '<div class="stat r"><div class="sl">平均通過率</div><div class="sv">'+avgPass+'%</div></div>';
 
-  const clickable = currentRole()==='teacher';
+  const clickable = ['admin','teacher'].includes(currentRole());
   document.getElementById('dashTbl').innerHTML = students.length ? students.map(s=>{
     const p = studentProgress(s);
     const pct = p.total? Math.round(p.done/p.total*100):0;
@@ -911,7 +1120,7 @@ function renderDashboard(){
 /* ---------- STUDENTS LIST ---------- */
 function renderStudents(){
   const students = scopedStudents();
-  const clickable = currentRole()==='teacher';
+  const clickable = ['admin','teacher'].includes(currentRole());
   document.getElementById('studentsTbl').innerHTML = (students.length ? students.map(s=>{
     const p = studentProgress(s);
     const remaining = p.total - p.done;
@@ -927,7 +1136,7 @@ function renderStudents(){
 
 /* ---------- STUDENT DETAIL ---------- */
 function openStudent(id){
-  if(currentRole()!=='teacher') return;
+  if(!['admin','teacher'].includes(currentRole())) return;
   CUR.studentId = id;
   const s = getAllStudents().find(x=>x.id===id);
   document.getElementById('detailName').textContent = s.name;
@@ -984,7 +1193,8 @@ function resultHtml(score){
 }
 async function submitAssess(){
   if(!selectedScore){ alert('請先點選一個評分等級'); return; }
-  const attendingId = document.getElementById('attSel').value;
+  const role = currentRole();
+  const attendingId = role==='teacher' ? (myTeacherRecord()? myTeacherRecord().id : '') : document.getElementById('attSel').value;
   DB.assessments = DB.assessments.filter(a=>!(a.studentId===CUR.studentId && a.code===CUR.code));
   DB.assessments.push({studentId:CUR.studentId, code:CUR.code, score:selectedScore, feedback:document.getElementById('fb').value.trim(), attendingId, date:new Date().toISOString().slice(0,10)});
   await persist();
@@ -1131,7 +1341,7 @@ async function handleImportCsv(evt){
       name, no, school, level: system, unit, ward, mentorName,
       periodStart: start, periodEnd: end,
       cohort: (document.getElementById('cohortSel').value||COHORTS[0]),
-      teacherId: autoMatchTeacher(school, unit),
+      teacherId: autoMatchTeacher(school, unit, ward),
     });
     added++;
   }
@@ -1243,8 +1453,25 @@ function genReminder(){
     initAttSel();
     populateViewSchoolSel();
     document.getElementById('cohortSel').addEventListener('change', renderDashboard);
-    onRoleChange();
-    nav('dashboard');
+
+    if(FIREBASE_CONFIGURED && fbApp){
+      fbAuth = firebase.auth();
+      fbAuth.onAuthStateChanged((user)=>{
+        currentUser = user;
+        if(user){
+          hideAuthOverlay();
+        } else {
+          showAuthOverlay();
+        }
+        initAttSel();
+        updateRoleUI();
+      });
+    } else {
+      // Firebase 未設定時（本機測試），不強制登入，直接以管理者權限預覽
+      currentUser = null;
+      updateRoleUI();
+      nav('dashboard');
+    }
   }catch(e){
     console.error('系統初始化發生錯誤：', e);
     if(!DB) DB = defaultDB();
