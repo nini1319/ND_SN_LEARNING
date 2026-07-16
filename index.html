@@ -253,6 +253,16 @@ textarea{min-height:70px;resize:vertical}
           <button class="pre-btn" onclick="insertPre('建議加強：')">＋建議加強</button>
         </div>
         <textarea id="fb" placeholder="請輸入具體回饋..."></textarea>
+
+        <label style="margin-top:14px">評核老師簽章</label>
+        <div style="font-size:11px;color:var(--t3);margin-bottom:6px" id="a-signed-by"></div>
+        <div style="border:1px solid var(--border);border-radius:8px;background:#fff;display:inline-block;touch-action:none">
+          <canvas id="sigCanvas" width="300" height="120" style="display:block;cursor:crosshair"></canvas>
+        </div>
+        <div style="margin-top:6px">
+          <button class="btn sm" onclick="clearSignature()">🧹 清除簽章</button>
+        </div>
+
         <div style="margin-top:14px;display:flex;gap:8px">
           <button class="btn pri" onclick="submitAssess()">送出評核</button>
           <button class="btn" onclick="backToDetail()">取消</button>
@@ -1146,8 +1156,10 @@ function openStudent(id){
     const a = assessFor(id, it.code);
     let badge = '<span class="badge by">未評核</span>';
     if(a) badge = a.score>=PASS_THRESHOLD ? '<span class="badge bg">通過</span>' : '<span class="badge br">未通過</span>';
+    const teacherLine = a ? '<div style="font-size:10.5px;color:var(--t3);margin-top:3px">評核老師：'+teacherName(a.attendingId)+(a.date?'（'+a.date+'）':'')+'</div>' : '';
+    const sigThumb = a && a.signature ? '<img src="'+a.signature+'" style="height:26px;border:1px solid var(--border);border-radius:4px;background:#fff;margin-top:4px">' : '';
     return '<div class="item-card" onclick="openAssess(\''+id+'\',\''+it.code+'\')">'+
-      '<div class="item-l"><div class="ec">'+it.code+' <span class="evtag ev-'+it.evidence+'">'+EVIDENCE_LABEL[it.evidence]+'</span></div><div class="en">'+it.name+'</div></div>'+
+      '<div class="item-l"><div class="ec">'+it.code+' <span class="evtag ev-'+it.evidence+'">'+EVIDENCE_LABEL[it.evidence]+'</span></div><div class="en">'+it.name+'</div>'+teacherLine+sigThumb+'</div>'+
       '<div>'+badge+'</div></div>';
   }).join('') : '<div style="text-align:center;color:var(--t3);padding:14px">此科目尚未建立技術項目，請至「管理平台 → 技術項目管理」新增</div>';
   nav('detail');
@@ -1176,6 +1188,15 @@ function openAssess(studentId, code){
       '<div class="rdesc"><b>'+r.label+'</b><br>'+r.desc+'</div></div>'
   ).join('');
   document.getElementById('resultArea').innerHTML = existing ? resultHtml(existing.score) : '';
+
+  clearSignature();
+  const defaultSigner = currentRole()==='teacher' ? (myTeacherRecord()?myTeacherRecord().name:'') : '';
+  if(existing && existing.attendingId){
+    document.getElementById('a-signed-by').textContent = '評核老師：'+teacherName(existing.attendingId)+(existing.date?'（'+existing.date+'）':'');
+    if(existing.signature) loadSignatureImage(existing.signature);
+  } else {
+    document.getElementById('a-signed-by').textContent = defaultSigner ? '將以「'+defaultSigner+'」的身分簽署' : '請在下方簽名框簽章';
+  }
   nav('assess');
 }
 function pickScore(lv, el){
@@ -1184,6 +1205,60 @@ function pickScore(lv, el){
   el.classList.add('sel');
 }
 function insertPre(t){ const ta=document.getElementById('fb'); ta.value += (ta.value?'\n':'')+t; }
+
+/* ---------- SIGNATURE PAD ---------- */
+let sigHasContent = false;
+let sigDrawing = false;
+let sigCtx = null;
+function sigCanvasEl(){ return document.getElementById('sigCanvas'); }
+function initSignaturePad(){
+  const canvas = sigCanvasEl();
+  if(!canvas || canvas.dataset.bound) return;
+  canvas.dataset.bound = '1';
+  sigCtx = canvas.getContext('2d');
+  sigCtx.strokeStyle = '#0b1121';
+  sigCtx.lineWidth = 2;
+  sigCtx.lineCap = 'round';
+  sigCtx.lineJoin = 'round';
+
+  const posFromEvent = (evt)=>{
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const point = evt.touches ? evt.touches[0] : evt;
+    return { x: (point.clientX-rect.left)*scaleX, y: (point.clientY-rect.top)*scaleY };
+  };
+  const start = (evt)=>{ evt.preventDefault(); sigDrawing = true; const p=posFromEvent(evt); sigCtx.beginPath(); sigCtx.moveTo(p.x,p.y); };
+  const move = (evt)=>{ if(!sigDrawing) return; evt.preventDefault(); const p=posFromEvent(evt); sigCtx.lineTo(p.x,p.y); sigCtx.stroke(); sigHasContent = true; };
+  const end = ()=>{ sigDrawing = false; };
+
+  canvas.addEventListener('mousedown', start);
+  canvas.addEventListener('mousemove', move);
+  window.addEventListener('mouseup', end);
+  canvas.addEventListener('touchstart', start, {passive:false});
+  canvas.addEventListener('touchmove', move, {passive:false});
+  canvas.addEventListener('touchend', end);
+}
+function clearSignature(){
+  initSignaturePad();
+  const canvas = sigCanvasEl();
+  sigCtx.clearRect(0,0,canvas.width,canvas.height);
+  sigCtx.fillStyle = '#ffffff';
+  sigCtx.fillRect(0,0,canvas.width,canvas.height);
+  sigHasContent = false;
+}
+function loadSignatureImage(dataUrl){
+  initSignaturePad();
+  const canvas = sigCanvasEl();
+  const img = new Image();
+  img.onload = ()=>{ sigCtx.drawImage(img,0,0,canvas.width,canvas.height); sigHasContent = true; };
+  img.src = dataUrl;
+}
+function getSignatureDataUrl(){
+  if(!sigHasContent) return '';
+  return sigCanvasEl().toDataURL('image/png');
+}
+
 function resultHtml(score){
   const rr = RUBRIC.find(r=>r.lv==='l'+score);
   const lvName = rr ? rr.label : ('Level'+score);
@@ -1195,9 +1270,12 @@ async function submitAssess(){
   if(!selectedScore){ alert('請先點選一個評分等級'); return; }
   const role = currentRole();
   const attendingId = role==='teacher' ? (myTeacherRecord()? myTeacherRecord().id : '') : document.getElementById('attSel').value;
+  if(!attendingId){ alert('請先選擇評核老師（或確認登入帳號已連結教師資料）'); return; }
+  const signature = getSignatureDataUrl();
   DB.assessments = DB.assessments.filter(a=>!(a.studentId===CUR.studentId && a.code===CUR.code));
-  DB.assessments.push({studentId:CUR.studentId, code:CUR.code, score:selectedScore, feedback:document.getElementById('fb').value.trim(), attendingId, date:new Date().toISOString().slice(0,10)});
+  DB.assessments.push({studentId:CUR.studentId, code:CUR.code, score:selectedScore, feedback:document.getElementById('fb').value.trim(), attendingId, signature, date:new Date().toISOString().slice(0,10)});
   await persist();
+  document.getElementById('a-signed-by').textContent = '評核老師：'+teacherName(attendingId)+'（'+todayStr()+'）'+(signature?' ✅ 已簽章':' （未簽章）');
   document.getElementById('resultArea').innerHTML = resultHtml(selectedScore);
   updateReminderBadge();
 }
@@ -1373,7 +1451,7 @@ function exportStudentsCsv(){
   downloadCsv('學生名冊_'+todayStr()+'.csv', rows);
 }
 function exportAssessCsv(){
-  const rows = [['學生','學校','實習科目','技術項目','評量方法','信賴等級','評核老師','日期','質性回饋']];
+  const rows = [['學生','學校','實習科目','技術項目','評量方法','信賴等級','評核老師','已簽章','日期','質性回饋']];
   getAssess().forEach(a=>{
     const s = getAllStudents().find(x=>x.id===a.studentId);
     const t = techniqueOf(a.code);
@@ -1385,6 +1463,7 @@ function exportAssessCsv(){
       t?(EVIDENCE_LABEL[t.method]||t.method):'',
       a.score,
       a.attendingId?teacherName(a.attendingId):'',
+      a.signature?'是':'否',
       a.date,
       a.feedback||''
     ]);
