@@ -95,6 +95,13 @@ tr.rowlink:hover td{background:rgba(255,255,255,.02)}
 .crumb{font-size:24px;color:var(--t3);margin-bottom:12px;cursor:pointer}
 .crumb span{color:var(--acc);cursor:pointer}
 .item-card{padding:12px 14px;border:1px solid var(--border);border-radius:var(--rs);margin-bottom:9px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:.15s}
+.tree-root{font-weight:700;font-size:28px;margin-bottom:10px;color:var(--text)}
+.tree-branch{margin-bottom:14px;padding-left:14px;border-left:2px solid var(--border)}
+.tree-node{margin-bottom:8px}
+.tree-children{padding-left:16px;border-left:2px dashed var(--border)}
+.tree-leaf{padding:10px 14px;border:1px solid var(--border);border-radius:var(--rs);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:.15s;background:var(--card)}
+.tree-leaf:hover{border-color:var(--acc)}
+.comptag{color:var(--a2);font-size:20px;font-weight:500}
 .item-card:hover{border-color:var(--acc)}
 .item-l .ec{font-family:'DM Mono',monospace;font-size:24px;color:var(--a2);font-weight:700}
 .item-l .en{font-size:24px;font-weight:500;margin-top:2px}
@@ -482,7 +489,6 @@ textarea{min-height:70px;resize:vertical}
           <div class="ct"><span><span class="dot"></span>套用最新課程設計</span></div>
           <p style="font-size:24px;color:var(--t2);margin-bottom:8px">依實習計畫矩陣（基護／內外一／內外二／產科／兒科／精神科／選習）套用標準課程設計，安全套用到系統（已存在的同科目/同方法/同名稱項目只會更新內容，不會刪除，也不會影響已完成的評核紀錄）。</p>
           <button class="btn pri" onclick="applyLatestCurriculum()">✅ 套用最新課程設計</button>
-          <button class="btn" style="margin-left:8px" onclick="cleanupLegacyTechniques()">🧹 清除舊版殘留技術項目（C1-C8通用項目）</button>
           <div id="curriculumResult" style="margin-top:8px;font-size:24px"></div>
         </div>
         <div class="card">
@@ -936,7 +942,16 @@ function getStudents(){
   return c ? all.filter(s=>s.cohort===c) : all;
 }
 function getAssess(){ return DB.assessments; }
-function getTechniques(){ return DB.techniques; }
+// 舊版（最早期）系統會用「八大核心能力」名稱本身當作技術名稱，自動產生 56 個通用項目
+// （技術名稱直接叫「臨床照護能力」「溝通能力」...）。這裡只是「不顯示」，資料庫裡完全不會被刪除，
+// 之後若要恢復顯示，只要把 HIDE_LEGACY_GENERIC_TECHNIQUES 改成 false 即可。
+const HIDE_LEGACY_GENERIC_TECHNIQUES = true;
+const LEGACY_GENERIC_NAMES = new Set(CORE_COMPETENCIES.map(c=>c.name));
+function isLegacyGenericTechnique(t){ return LEGACY_GENERIC_NAMES.has(t.name); }
+function getTechniques(){
+  if(!HIDE_LEGACY_GENERIC_TECHNIQUES) return DB.techniques;
+  return DB.techniques.filter(t=>!isLegacyGenericTechnique(t));
+}
 
 function itemsForLevel(level, unit){
   return getTechniques().filter(t=>t.unit===unit).map(t=>({code:t.id,name:t.name,desc:t.desc,evidence:t.method,compCode:t.compCode,rubric:t.rubric||null,targetLevel:t.targetLevel||null}));
@@ -1408,24 +1423,6 @@ async function applyLatestCurriculum(){
   renderTechniqueList();
   document.getElementById('curriculumResult').innerHTML = '<span style="color:var(--acc)">✅ 已套用最新課程設計：新增 '+added+' 項、更新 '+updated+' 項。</span>';
 }
-async function cleanupLegacyTechniques(){
-  // 舊版（最早期）系統會用「八大核心能力」名稱本身當作技術名稱自動產生 56 個通用項目
-  // （例如技術名稱直接叫「臨床照護能力」「溝通能力」...），這裡精準辨識並移除這些殘留項目
-  const legacyNames = new Set(CORE_COMPETENCIES.map(c=>c.name));
-  const before = DB.techniques.length;
-  const legacyIds = new Set(DB.techniques.filter(t=>legacyNames.has(t.name)).map(t=>t.id));
-  if(legacyIds.size===0){
-    document.getElementById('curriculumResult').innerHTML = '<span style="color:var(--t2)">沒有找到殘留的舊版通用技術項目。</span>';
-    return;
-  }
-  if(!confirm('找到 '+legacyIds.size+' 項舊版殘留技術項目（如「臨床照護能力」「溝通能力」等 8 大核心能力通用項目），確定要清除嗎？（若有學生已針對這些項目登錄過評核紀錄，該筆紀錄會保留但技術名稱會顯示為「技術未指定」）')) return;
-  DB.techniques = DB.techniques.filter(t=>!legacyIds.has(t.id));
-  await persist();
-  fillTechniqueSelects();
-  renderTechniqueList();
-  renderDashboard();
-  document.getElementById('curriculumResult').innerHTML = '<span style="color:var(--acc)">✅ 已清除 '+(before-DB.techniques.length)+' 項舊版殘留技術項目。</span>';
-}
 async function submitTechnique(){
   const unit = document.getElementById('tq-unit').value;
   const method = document.getElementById('tq-method').value;
@@ -1451,16 +1448,24 @@ async function delTechnique(id){
 }
 function renderTechniqueList(){
   const units = Object.keys(PHASES);
+  const methodOrder = ['DOPS','MiniCEX','EPA','PrePost','Portfolio'];
   const html = units.map(u=>{
     const items = getTechniques().filter(t=>t.unit===u);
     if(!items.length) return '';
-    const rows = items.map(t=>
-      '<div class="item-card" style="cursor:default">'+
-        '<div class="item-l"><div class="ec"><span class="evtag ev-'+t.method+'">'+EVIDENCE_LABEL[t.method]+'</span> '+(t.compCode?(' '+t.compCode+' '+(COMP_NAME[t.compCode]||'')):'')+(t.targetLevel?' <span style="color:var(--a3)">〔門檻 L'+t.targetLevel+'〕</span>':'')+(t.rubric?' <span style="color:var(--acc)">〔自訂規準〕</span>':'')+'</div><div class="en">'+t.name+'</div></div>'+
-        '<button class="btn sm" onclick="delTechnique(\''+t.id+'\')">刪除</button>'+
-      '</div>'
-    ).join('');
-    return '<div style="margin-bottom:10px"><div style="font-size:11px;color:var(--t3);margin-bottom:6px;font-family:\'DM Mono\',monospace">'+PHASES[u]+'</div>'+rows+'</div>';
+    const grouped = {};
+    items.forEach(t=>{ (grouped[t.method]=grouped[t.method]||[]).push(t); });
+    const branches = methodOrder.filter(m=>grouped[m] && grouped[m].length).map(m=>{
+      const rows = grouped[m].map(t=>
+        '<div class="tree-leaf" style="cursor:default">'+
+          '<div class="item-l"><div class="en">'+t.name+(t.compCode?'　<span class="comptag">【'+(COMP_NAME[t.compCode]||t.compCode)+'】</span>':'')+
+          (t.targetLevel?' <span style="color:var(--a3)">〔門檻 '+(isBars9(t.method)?t.targetLevel+'分':'L'+t.targetLevel)+'〕</span>':'')+
+          (t.rubric?' <span style="color:var(--acc)">〔自訂規準〕</span>':'')+'</div></div>'+
+          '<button class="btn sm" onclick="delTechnique(\''+t.id+'\')">刪除</button>'+
+        '</div>'
+      ).join('');
+      return '<div class="tree-branch"><div class="tree-node"><span class="evtag ev-'+m+'">'+EVIDENCE_LABEL[m]+'</span></div><div class="tree-children">'+rows+'</div></div>';
+    }).join('');
+    return '<div style="margin-bottom:16px"><div class="tree-root" style="font-size:24px">📁 '+PHASES[u]+'</div>'+branches+'</div>';
   }).join('');
   document.getElementById('techniqueList').innerHTML = html || '<div style="text-align:center;color:var(--t3);padding:14px">尚無技術項目</div>';
 }
@@ -1529,16 +1534,33 @@ function openStudent(id){
   document.getElementById('detailName').textContent = s.name;
   document.getElementById('detailTitle').textContent = s.name+'（'+s.level+' · '+(PHASES[s.unit]||s.unit)+'）';
   const items = itemsForLevel(s.level, s.unit);
-  document.getElementById('itemList').innerHTML = items.length ? items.map(it=>{
+
+  const methodOrder = ['DOPS','MiniCEX','EPA','PrePost','Portfolio'];
+  const grouped = {};
+  items.forEach(it=>{ (grouped[it.evidence]=grouped[it.evidence]||[]).push(it); });
+
+  const itemRow = (it) => {
     const a = assessFor(id, it.code);
     let badge = '<span class="badge by">未評核</span>';
     if(a) badge = a.score>=passThresholdFor(it.code) ? '<span class="badge bg">通過</span>' : '<span class="badge br">未通過</span>';
-    const teacherLine = a ? '<div style="font-size:10.5px;color:var(--t3);margin-top:3px">評核老師：'+teacherName(a.attendingId)+(a.date?'（'+a.date+'）':'')+'</div>' : '';
+    const teacherLine = a ? '<div style="font-size:20px;color:var(--t3);margin-top:3px">評核老師：'+teacherName(a.attendingId)+(a.date?'（'+a.date+'）':'')+'</div>' : '';
     const sigThumb = a && a.signature ? '<img src="'+a.signature+'" style="height:26px;border:1px solid var(--border);border-radius:4px;background:#fff;margin-top:4px">' : '';
-    return '<div class="item-card" onclick="openAssess(\''+id+'\',\''+it.code+'\')">'+
-      '<div class="item-l"><div class="ec">'+it.code+' <span class="evtag ev-'+it.evidence+'">'+EVIDENCE_LABEL[it.evidence]+'</span></div><div class="en">'+it.name+'</div>'+teacherLine+sigThumb+'</div>'+
+    const compTag = it.compCode ? '　<span class="comptag">【'+(COMP_NAME[it.compCode]||it.compCode)+'】</span>' : '';
+    return '<div class="tree-leaf" onclick="openAssess(\''+id+'\',\''+it.code+'\')">'+
+      '<div class="item-l"><div class="en">'+it.name+compTag+'</div>'+teacherLine+sigThumb+'</div>'+
       '<div>'+badge+'</div></div>';
-  }).join('') : '<div style="text-align:center;color:var(--t3);padding:14px">此科目尚未建立技術項目，請至「管理平台 → 技術項目管理」新增</div>';
+  };
+
+  const treeHtml = methodOrder.filter(m=>grouped[m] && grouped[m].length).map(m=>
+    '<div class="tree-branch">'+
+      '<div class="tree-node"><span class="evtag ev-'+m+'">'+EVIDENCE_LABEL[m]+'</span></div>'+
+      '<div class="tree-children">'+grouped[m].map(itemRow).join('')+'</div>'+
+    '</div>'
+  ).join('');
+
+  document.getElementById('itemList').innerHTML = items.length
+    ? '<div class="tree-root">📁 '+(PHASES[s.unit]||s.unit)+'</div>'+treeHtml
+    : '<div style="text-align:center;color:var(--t3);padding:14px">此科目尚未建立技術項目，請至「管理平台 → 技術項目管理」新增</div>';
   nav('detail');
 }
 
