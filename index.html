@@ -10,122 +10,152 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <style>
 :root{
-  --bg:#0b1121;--bg2:#111827;--bg3:#1a2235;--card:#151d2e;
-  --border:#1e2d45;--acc:#00c9a7;--a2:#3b82f6;--a3:#f59e0b;
-  --danger:#ef4444;--purple:#a855f7;--text:#e2e8f0;--t2:#94a3b8;--t3:#475569;
-  --r:12px;--rs:8px;--sw:250px;
+  --bg:#F7F1E3;--bg2:#FDFAF3;--bg3:#EFE7D3;--card:#FFFDF7;
+  --border:#E0D5B8;--acc:#0E7C66;--a2:#2563EB;--a3:#B8620C;
+  --danger:#C0392B;--purple:#7C3AED;--text:#3A2E1F;--t2:#6B5D45;--t3:#8C7D5E;
+  --r:14px;--rs:10px;--sw:280px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+body{font-family:'Microsoft JhengHei','微軟正黑體','PingFang TC','Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.5}
 .sidebar{position:fixed;left:0;top:0;bottom:0;width:var(--sw);background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:200}
 .sb-logo{padding:14px 16px;border-bottom:1px solid var(--border)}
-.sb-tag{font-family:'DM Mono',monospace;font-size:9px;color:var(--acc);letter-spacing:3px;margin-bottom:3px}
-.sb-logo h1{font-size:13px;font-weight:700;line-height:1.4}
+.sb-tag{font-family:'DM Mono',monospace;font-size:24px;color:var(--acc);letter-spacing:3px;margin-bottom:3px}
+.sb-logo h1{font-size:24px;font-weight:700;line-height:1.4}
 .sb-nav{flex:1;padding:8px 0}
-.ni{display:flex;align-items:center;gap:8px;padding:8px 16px;cursor:pointer;color:var(--t2);font-size:12.5px;border-left:3px solid transparent}
+.ni{display:flex;align-items:center;gap:8px;padding:8px 16px;cursor:pointer;color:var(--t2);font-size:24px;border-left:3px solid transparent}
 .ni:hover{background:var(--bg3);color:var(--text)}
 .ni.active{background:rgba(0,201,167,.09);color:var(--acc);border-left-color:var(--acc);font-weight:500}
-.ni .ic{font-size:14px;width:18px;text-align:center}
-.nb{margin-left:auto;background:var(--danger);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px}
+.ni .ic{font-size:24px;width:18px;text-align:center}
+.nb{margin-left:auto;background:var(--danger);color:#fff;font-size:24px;font-weight:700;padding:1px 6px;border-radius:10px}
 .main{margin-left:var(--sw);min-height:100vh}
 .topbar{min-height:52px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:8px 22px;position:sticky;top:0;background:var(--bg);z-index:100;flex-wrap:wrap;gap:8px}
-.tbt{font-size:14.5px;font-weight:600}
+.tbt{font-size:25px;font-weight:600}
 .tbr{display:flex;align-items:center;flex-wrap:wrap;gap:4px 0}
-.tbr label{color:var(--t3);font-size:11px;margin:0 6px 0 10px}
-.tbr select{background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:6px 10px;font-size:12px}
+.tbr label{color:var(--t3);font-size:24px;margin:0 6px 0 10px}
+.tbr select{background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:6px 10px;font-size:24px}
 .content{padding:20px 24px}
 .page{display:none}.page.active{display:block}
 .card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:14px}
-.ct{font-size:11px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px;justify-content:space-between}
+.ct{font-size:24px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px;justify-content:space-between}
 .dot{width:6px;height:6px;border-radius:50%;background:var(--acc)}
 .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .stat{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:13px 15px;position:relative;overflow:hidden}
 .stat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--acc)}
 .stat.b::before{background:var(--a2)}.stat.y::before{background:var(--a3)}.stat.r::before{background:var(--danger)}
-.sl{font-size:10px;color:var(--t3);margin-bottom:4px}
-.sv{font-size:21px;font-weight:700;font-family:'DM Mono',monospace}
+.sl{font-size:24px;color:var(--t3);margin-bottom:4px}
+.sv{font-size:36px;font-weight:700;font-family:'DM Mono',monospace}
 table{width:100%;border-collapse:collapse}
-th{font-size:10.5px;color:var(--t3);font-weight:500;padding:7px 8px;border-bottom:1px solid var(--border);text-align:left}
-td{padding:9px 8px;border-bottom:1px solid rgba(30,45,69,.4);font-size:12.5px;vertical-align:middle}
+.tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.menuToggle{display:none}
+
+@media (max-width: 860px){
+  :root{--sw:250px}
+  .menuToggle{display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:10px;background:var(--card);border:1px solid var(--border);font-size:28px;cursor:pointer;margin-right:8px}
+  .sidebar{transform:translateX(-100%);transition:transform .2s ease;box-shadow:6px 0 24px rgba(0,0,0,.15)}
+  .sidebar.open{transform:translateX(0)}
+  .main{margin-left:0}
+  .topbar{padding:10px 14px}
+  .content{padding:14px}
+  .g4{grid-template-columns:1fr 1fr}
+  .g2{grid-template-columns:1fr}
+  .anlgrid{grid-template-columns:1fr}
+  .tbr{width:100%}
+  .tbr select{flex:1;min-width:140px}
+  #sidebarOverlay.show{display:block}
+}
+#sidebarOverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:190}
+@media (max-width: 480px){
+  .g4{grid-template-columns:1fr 1fr}
+  .authbox{width:92vw;padding:20px}
+}
+th{font-size:24px;color:var(--t3);font-weight:500;padding:7px 8px;border-bottom:1px solid var(--border);text-align:left}
+td{padding:9px 8px;border-bottom:1px solid rgba(30,45,69,.4);font-size:24px;vertical-align:middle}
 tr.rowlink{cursor:pointer}
 tr.rowlink:hover td{background:rgba(255,255,255,.02)}
-.lvtag{font-family:'DM Mono',monospace;font-size:10px;font-weight:700;padding:2px 8px;border-radius:7px;background:rgba(59,130,246,.15);color:var(--a2)}
-.evtag{font-family:'DM Mono',monospace;font-size:9px;font-weight:700;padding:2px 7px;border-radius:6px;display:inline-block}
+.lvtag{font-family:'DM Mono',monospace;font-size:24px;font-weight:700;padding:2px 8px;border-radius:7px;background:rgba(59,130,246,.15);color:var(--a2)}
+.evtag{font-family:'DM Mono',monospace;font-size:24px;font-weight:700;padding:2px 7px;border-radius:6px;display:inline-block}
 .ev-DOPS{background:rgba(0,201,167,.15);color:var(--acc)}
 .ev-MiniCEX{background:rgba(245,158,11,.15);color:var(--a3)}
 .ev-EPA{background:rgba(168,85,247,.15);color:var(--purple)}
 .ev-Portfolio{background:rgba(59,130,246,.15);color:var(--a2)}
-.badge{padding:3px 9px;border-radius:20px;font-size:10px;font-weight:600;border:1px solid;display:inline-block}
+.ev-PrePost{background:rgba(184,98,12,.15);color:var(--a3)}
+.badge{padding:3px 9px;border-radius:20px;font-size:24px;font-weight:600;border:1px solid;display:inline-block}
 .bg{background:rgba(0,201,167,.12);color:var(--acc);border-color:rgba(0,201,167,.3)}
 .by{background:rgba(245,158,11,.12);color:var(--a3);border-color:rgba(245,158,11,.3)}
 .br{background:rgba(239,68,68,.12);color:var(--danger);border-color:rgba(239,68,68,.3)}
 .pbar{height:6px;background:var(--bg3);border-radius:4px;overflow:hidden;margin-top:4px}
 .pbar i{display:block;height:100%;background:var(--acc)}
-.btn{padding:7px 14px;border-radius:7px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:12px;cursor:pointer;font-family:inherit}
+.btn{padding:7px 14px;border-radius:7px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:24px;cursor:pointer;font-family:inherit}
 .btn:hover{border-color:var(--acc);color:var(--acc)}
 .btn.pri{background:var(--acc);border-color:var(--acc);color:#04241f;font-weight:600}
 .btn.pri:hover{opacity:.9;color:#04241f}
 .btn.warn{background:var(--a3);border-color:var(--a3);color:#3a2400;font-weight:600}
-.btn.sm{padding:4px 9px;font-size:11px}
-.crumb{font-size:11.5px;color:var(--t3);margin-bottom:12px;cursor:pointer}
+.btn.sm{padding:4px 9px;font-size:24px}
+.crumb{font-size:24px;color:var(--t3);margin-bottom:12px;cursor:pointer}
 .crumb span{color:var(--acc);cursor:pointer}
 .item-card{padding:12px 14px;border:1px solid var(--border);border-radius:var(--rs);margin-bottom:9px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:.15s}
 .item-card:hover{border-color:var(--acc)}
-.item-l .ec{font-family:'DM Mono',monospace;font-size:10px;color:var(--a2);font-weight:700}
-.item-l .en{font-size:13.5px;font-weight:500;margin-top:2px}
-.rd{font-size:10.5px;color:var(--t3);margin-bottom:14px;line-height:1.6;background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.15);border-radius:7px;padding:9px 11px}
+.item-l .ec{font-family:'DM Mono',monospace;font-size:24px;color:var(--a2);font-weight:700}
+.item-l .en{font-size:24px;font-weight:500;margin-top:2px}
+.rd{font-size:24px;color:var(--t3);margin-bottom:14px;line-height:1.6;background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.15);border-radius:7px;padding:9px 11px}
 .rubric{margin-bottom:14px}
+.bars9-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.bars9-btn{width:56px;height:56px;border-radius:10px;border:2px solid var(--border);background:var(--bg3);color:var(--t2);font-family:'DM Mono',monospace;font-size:28px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.bars9-btn.sel{background:var(--acc);border-color:var(--acc);color:#fff}
+.bars9-anchor{padding:8px 0;border-bottom:1px dashed rgba(30,45,69,.25);font-size:24px;color:var(--t2)}
+.bars9-anchor:last-child{border-bottom:none}
+.bars9-anchor b{color:var(--text);font-family:'DM Mono',monospace}
 .rubric-row{display:flex;gap:8px;align-items:flex-start;padding:8px 0;border-bottom:1px dashed rgba(30,45,69,.6)}
 .rubric-row:last-child{border-bottom:none}
-.rlv{flex-shrink:0;width:64px;text-align:center;font-family:'DM Mono',monospace;font-size:11px;font-weight:700;padding:4px 0;border-radius:6px;cursor:pointer;border:2px solid var(--border);background:var(--bg3);color:var(--t2)}
+.rlv{flex-shrink:0;width:64px;text-align:center;font-family:'DM Mono',monospace;font-size:24px;font-weight:700;padding:4px 0;border-radius:6px;cursor:pointer;border:2px solid var(--border);background:var(--bg3);color:var(--t2)}
 .rlv.l1{border-color:#ef4444}.rlv.l2{border-color:#f97316}.rlv.l3{border-color:#eab308}.rlv.l4{border-color:#22c55e}.rlv.l5{border-color:#00c9a7}
 .rlv.sel.l1{background:#ef4444;color:#fff}.rlv.sel.l2{background:#f97316;color:#fff}.rlv.sel.l3{background:#eab308;color:#000}.rlv.sel.l4{background:#22c55e;color:#000}.rlv.sel.l5{background:#00c9a7;color:#000}
-.rdesc{font-size:12px;color:var(--t2);line-height:1.5;padding-top:5px}
-label{display:block;font-size:11px;color:var(--t2);margin-bottom:5px;font-weight:500}
-select,input,textarea{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--rs);color:var(--text);padding:8px 10px;font-size:13px;font-family:inherit;outline:none}
+.rdesc{font-size:24px;color:var(--t2);line-height:1.5;padding-top:5px}
+label{display:block;font-size:24px;color:var(--t2);margin-bottom:5px;font-weight:500}
+select,input,textarea{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--rs);color:var(--text);padding:8px 10px;font-size:24px;font-family:inherit;outline:none}
 textarea{min-height:70px;resize:vertical}
 .fg{margin-bottom:11px}
-.pre-btn{padding:3px 9px;border:1px solid var(--border);border-radius:13px;background:var(--bg3);color:var(--t2);font-size:10.5px;cursor:pointer;margin-right:4px;margin-bottom:4px}
+.pre-btn{padding:3px 9px;border:1px solid var(--border);border-radius:13px;background:var(--bg3);color:var(--t2);font-size:24px;cursor:pointer;margin-right:4px;margin-bottom:4px}
 .pre-btn:hover{border-color:var(--acc);color:var(--acc)}
-.result-box{margin-top:16px;padding:16px;border-radius:var(--r);text-align:center;font-size:16px;font-weight:700}
+.result-box{margin-top:16px;padding:16px;border-radius:var(--r);text-align:center;font-size:27px;font-weight:700}
 .result-box.pass{background:rgba(0,201,167,.1);border:1px solid var(--acc);color:var(--acc)}
 .result-box.fail{background:rgba(239,68,68,.1);border:1px solid var(--danger);color:var(--danger)}
-.al{padding:10px 12px;border-radius:8px;font-size:12px;margin-bottom:10px}
+.al{padding:10px 12px;border-radius:8px;font-size:24px;margin-bottom:10px}
 .aok{background:rgba(0,201,167,.1);border:1px solid var(--acc);color:var(--acc)}
 .ai{background:rgba(59,130,246,.08);border:1px solid var(--a2);color:var(--a2)}
 .hidden{display:none!important}
-.mailbox{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:11.5px;color:var(--t2);white-space:pre-wrap;margin-top:8px;line-height:1.6;font-family:'DM Mono',monospace}
+.mailbox{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:24px;color:var(--t2);white-space:pre-wrap;margin-top:8px;line-height:1.6;font-family:'DM Mono',monospace}
 .tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
-.tab{padding:7px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--t2);font-size:12.5px;cursor:pointer}
+.tab{padding:7px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--t2);font-size:24px;cursor:pointer}
 .tab.active{background:rgba(0,201,167,.1);border-color:var(--acc);color:var(--acc);font-weight:600}
 .subcard{display:none}.subcard.active{display:block}
 .chiplist{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
-.chip{font-size:10.5px;padding:3px 9px;border-radius:12px;background:var(--bg3);border:1px solid var(--border);color:var(--t2)}
+.chip{font-size:24px;padding:3px 9px;border-radius:12px;background:var(--bg3);border:1px solid var(--border);color:var(--t2)}
 .masked{color:var(--t3);font-style:italic}
 .anlgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.barrow{display:flex;align-items:center;gap:8px;margin-bottom:9px;font-size:11.5px}
+.barrow{display:flex;align-items:center;gap:8px;margin-bottom:9px;font-size:24px}
 .barrow .lbl{width:130px;flex-shrink:0;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .barrow .track{flex:1;background:var(--bg3);border-radius:4px;height:14px;overflow:hidden}
 .barrow .track i{display:block;height:100%;background:var(--acc)}
-.barrow .val{width:34px;text-align:right;font-family:'DM Mono',monospace;font-size:11px;color:var(--t2)}
-#loadingOverlay{position:fixed;inset:0;background:var(--bg);color:var(--t2);display:flex;align-items:center;justify-content:center;z-index:9999;font-family:'DM Mono',monospace;font-size:13px;letter-spacing:1px}
-.savebadge{position:fixed;bottom:16px;right:16px;background:var(--bg2);border:1px solid var(--acc);color:var(--acc);font-size:11px;padding:6px 13px;border-radius:20px;z-index:500;opacity:0;transition:opacity .2s;font-family:'DM Mono',monospace}
+.barrow .val{width:34px;text-align:right;font-family:'DM Mono',monospace;font-size:24px;color:var(--t2)}
+#loadingOverlay{position:fixed;inset:0;background:var(--bg);color:var(--t2);display:flex;align-items:center;justify-content:center;z-index:9999;font-family:'DM Mono',monospace;font-size:24px;letter-spacing:1px}
+.savebadge{position:fixed;bottom:16px;right:16px;background:var(--bg2);border:1px solid var(--acc);color:var(--acc);font-size:24px;padding:6px 13px;border-radius:20px;z-index:500;opacity:0;transition:opacity .2s;font-family:'DM Mono',monospace}
 .savebadge.show{opacity:1}
-.roletag{font-size:10px;padding:2px 8px;border-radius:10px;border:1px solid var(--border);color:var(--t2)}
+.roletag{font-size:24px;padding:2px 8px;border-radius:10px;border:1px solid var(--border);color:var(--t2)}
 #authOverlay{position:fixed;inset:0;background:var(--bg);z-index:9997;display:flex;align-items:center;justify-content:center}
 .authbox{width:340px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:26px}
-.authbox h2{font-size:16px;margin-bottom:4px}
-.authbox .sub{font-size:11px;color:var(--t3);margin-bottom:18px}
+.authbox h2{font-size:27px;margin-bottom:4px}
+.authbox .sub{font-size:24px;color:var(--t3);margin-bottom:18px}
 .authtabs{display:flex;gap:4px;margin-bottom:16px;background:var(--bg3);border-radius:8px;padding:3px}
-.authtab{flex:1;text-align:center;padding:6px 0;border-radius:6px;font-size:12px;color:var(--t2);cursor:pointer}
+.authtab{flex:1;text-align:center;padding:6px 0;border-radius:6px;font-size:24px;color:var(--t2);cursor:pointer}
 .authtab.active{background:var(--acc);color:#04241f;font-weight:600}
 .authview{display:none}
 .authview.active{display:block}
-.autherr{font-size:11.5px;color:var(--danger);margin:8px 0;min-height:14px}
-.authok{font-size:11.5px;color:var(--acc);margin:8px 0;min-height:14px}
-.guestlink{display:block;text-align:center;margin-top:16px;font-size:11.5px;color:var(--t3);cursor:pointer;text-decoration:underline}
-.acctbar{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--t2)}
+.autherr{font-size:24px;color:var(--danger);margin:8px 0;min-height:14px}
+.authok{font-size:24px;color:var(--acc);margin:8px 0;min-height:14px}
+.guestlink{display:block;text-align:center;margin-top:16px;font-size:24px;color:var(--t3);cursor:pointer;text-decoration:underline}
+.acctbar{display:flex;align-items:center;gap:8px;font-size:24px;color:var(--t2)}
 </style>
 </head>
 <body>
@@ -173,7 +203,8 @@ textarea{min-height:70px;resize:vertical}
 
 <div class="savebadge" id="saveBadge">已儲存</div>
 
-<div class="sidebar">
+<div id="sidebarOverlay" onclick="closeSidebar()"></div>
+<div class="sidebar" id="sidebar">
   <div class="sb-logo">
     <div class="sb-tag">TEACHER / SCHOOL PORTAL</div>
     <h1>護理實習<br>學生評核系統</h1>
@@ -189,7 +220,10 @@ textarea{min-height:70px;resize:vertical}
 
 <div class="main">
   <div class="topbar">
-    <div class="tbt" id="tbt">儀表板</div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <div class="menuToggle" onclick="toggleSidebar()">☰</div>
+      <div class="tbt" id="tbt">儀表板</div>
+    </div>
     <div class="tbr">
       <div class="acctbar">
         <span class="roletag" id="acctBadge">—</span>
@@ -211,10 +245,10 @@ textarea{min-height:70px;resize:vertical}
       <div class="g4" id="statCards"></div>
       <div class="card">
         <div class="ct"><span><span class="dot"></span>學生成效總覽</span></div>
-        <table>
+        <div class="tablewrap"><table>
           <thead><tr><th>學生</th><th>學校</th><th>學制 / 年級</th><th>已評核 / 應評核項目</th><th>完成度</th><th>通過率</th><th></th></tr></thead>
           <tbody id="dashTbl"></tbody>
-        </table>
+        </table></div>
       </div>
     </div>
 
@@ -222,10 +256,10 @@ textarea{min-height:70px;resize:vertical}
     <div class="page" id="page-students">
       <div class="card">
         <div class="ct"><span><span class="dot"></span>選擇要評核的學生</span></div>
-        <table>
+        <div class="tablewrap"><table>
           <thead><tr><th>學生</th><th>學校</th><th>學制 / 年級</th><th>實習科目</th><th>待評核項目</th><th></th></tr></thead>
           <tbody id="studentsTbl"></tbody>
-        </table>
+        </table></div>
       </div>
     </div>
 
@@ -244,6 +278,7 @@ textarea{min-height:70px;resize:vertical}
       <div class="card">
         <div class="ct"><span><span id="a-item-code"></span> · <span id="a-item-name"></span></span><span class="evtag" id="a-item-ev"></span></div>
         <div class="rd" id="a-item-desc"></div>
+        <div class="rd hidden" id="commonChecklistBox" style="background:rgba(0,201,167,.06);border-color:rgba(0,201,167,.2)"></div>
         <label>評分規準（點選符合本次觀察表現的等級）</label>
         <div class="rubric" id="rubric"></div>
         <label>質性回饋（給學生具體建議）</label>
@@ -310,10 +345,10 @@ textarea{min-height:70px;resize:vertical}
     <div class="page" id="page-remind">
       <div class="card">
         <div class="ct"><span><span class="dot"></span>尚未完成評核清單</span></div>
-        <table>
+        <div class="tablewrap"><table>
           <thead><tr><th>學生</th><th>學校 / 學制年級</th><th>未評核項目</th><th>負責老師</th></tr></thead>
           <tbody id="remindTbl"></tbody>
-        </table>
+        </table></div>
       </div>
       <div class="card">
         <div class="ct"><span><span class="dot"></span>發送提醒信</span></div>
@@ -371,10 +406,10 @@ textarea{min-height:70px;resize:vertical}
         </div>
         <div class="card">
           <div class="ct"><span><span class="dot"></span>老師名單</span></div>
-          <table>
+          <div class="tablewrap"><table>
             <thead><tr><th>姓名</th><th>學校</th><th>負責科目</th><th>Email</th><th>實習期間</th><th>分派學生數</th><th></th></tr></thead>
             <tbody id="teacherTbl"></tbody>
-          </table>
+          </table></div>
         </div>
         <div class="card">
           <div class="ct"><span><span class="dot"></span>手動配對學生給老師</span></div>
@@ -420,10 +455,10 @@ textarea{min-height:70px;resize:vertical}
         </div>
         <div class="card">
           <div class="ct"><span><span class="dot"></span>學生名單</span></div>
-          <table>
+          <div class="tablewrap"><table>
             <thead><tr><th>學號</th><th>姓名</th><th>學校</th><th>學制 / 年級</th><th>實習科目</th><th>病房</th><th>指導老師</th><th></th></tr></thead>
             <tbody id="studentAdminTbl"></tbody>
-          </table>
+          </table></div>
         </div>
       </div>
 
@@ -444,6 +479,12 @@ textarea{min-height:70px;resize:vertical}
       <!-- TECHNIQUE MGMT -->
       <div class="subcard" id="sub-technique">
         <div class="card">
+          <div class="ct"><span><span class="dot"></span>套用最新課程設計</span></div>
+          <p style="font-size:24px;color:var(--t2);margin-bottom:8px">依「基護→DOPS 給藥/生命徵象測量、MiniCEX 病人辨識」「內外科→DOPS 給藥/生命徵象測量/抽痰、MiniCEX 疾病衛教/交接班」「產科」「兒科」「精神科」「選習（含 EPA 給藥/交接班，目標 Level 2）」的標準課程設計，安全套用到系統（已存在的同科目/同方法/同名稱項目只會更新內容，不會刪除，也不會影響已完成的評核紀錄）。</p>
+          <button class="btn pri" onclick="applyLatestCurriculum()">✅ 套用最新課程設計</button>
+          <div id="curriculumResult" style="margin-top:8px;font-size:24px"></div>
+        </div>
+        <div class="card">
           <div class="ct"><span><span class="dot"></span>新增技術項目</span></div>
           <div class="g2">
             <div class="fg"><label>實習科目 / Phase<span style="color:var(--danger)">*</span></label><select id="tq-unit"></select></div>
@@ -452,8 +493,14 @@ textarea{min-height:70px;resize:vertical}
             </div>
             <div class="fg"><label>對應核心能力</label><select id="tq-comp"></select></div>
             <div class="fg"><label>技術 / 項目名稱<span style="color:var(--danger)">*</span></label><input id="tq-name" placeholder="例：導尿管留置"></div>
+            <div class="fg"><label>通過門檻等級（選填，預設 Level 3）</label>
+              <select id="tq-target"><option value="">預設（Level 3）</option><option value="1">Level 1</option><option value="2">Level 2</option><option value="3">Level 3</option><option value="4">Level 4</option><option value="5">Level 5</option></select>
+            </div>
           </div>
           <div class="fg"><label>項目說明（評核時會顯示給老師參考）</label><textarea id="tq-desc" placeholder="能正確評估並執行…"></textarea></div>
+          <div class="fg"><label>自訂評分規準（選填，5 行，依序對應 Level 1～5；不填則使用系統通用規準）</label>
+            <textarea id="tq-rubric" rows="5" placeholder="Level1 的表現描述&#10;Level2 的表現描述&#10;Level3 的表現描述&#10;Level4 的表現描述&#10;Level5 的表現描述"></textarea>
+          </div>
           <button class="btn pri" onclick="submitTechnique()">＋ 新增技術項目</button>
         </div>
         <div class="card">
@@ -469,7 +516,7 @@ textarea{min-height:70px;resize:vertical}
 <script>
 /* ---------- STATIC REFERENCE DATA ---------- */
 const EVIDENCE_MAP = {C1:'DOPS',C2:'MiniCEX',C3:'MiniCEX',C4:'DOPS',C5:'Portfolio',C6:'MiniCEX',C7:'EPA',C8:'DOPS'};
-const EVIDENCE_LABEL = {DOPS:'DOPS',MiniCEX:'Mini-CEX',EPA:'EPA',Portfolio:'Portfolio'};
+const EVIDENCE_LABEL = {DOPS:'DOPS',MiniCEX:'Mini-CEX',EPA:'EPA',Portfolio:'Portfolio',PrePost:'前後測'};
 
 const CORE_COMPETENCIES = [
   {code:'C1',name:'臨床照護能力',desc:'能依病人狀況執行安全、正確且符合實證之護理措施。'},
@@ -485,36 +532,68 @@ const COMP_NAME = Object.fromEntries(CORE_COMPETENCIES.map(c=>[c.code,c.name]));
 
 const PHASES = {
   '基本護理': 'Phase1 基本護理',
-  '內外科': 'Phase2 內外科',
+  '內外科（1）': 'Phase2a 內外科（1）',
+  '內外科（2）': 'Phase2b 內外科（2）',
   '產科': 'Phase3 產科',
   '兒科': 'Phase4 兒科',
   '精神科': 'Phase5 精神科',
   '社區': 'Phase6 社區',
-  '綜合實習': 'Phase7 綜合實習',
+  '綜合實習': 'Phase7 綜合實習（選習）',
 };
 // 匯入名冊時，把常見的科別/組別寫法對應到系統內部的實習科目 key
 const UNIT_ALIAS = {
   '基護':'基本護理', '基本護理':'基本護理',
-  '內外科':'內外科', '內科':'內外科', '外科':'內外科',
+  '內外科':'內外科（1）', '內科':'內外科（1）', '外科':'內外科（1）',
+  '內外一':'內外科（1）', '內外科(1)':'內外科（1）', '內外科（1）':'內外科（1）',
+  '內外二':'內外科（2）', '內外科(2)':'內外科（2）', '內外科（2）':'內外科（2）',
   '產科':'產科', '婦產科':'產科',
   '兒科':'兒科', '兒科病房':'兒科',
-  '精神科':'精神科',
+  '精神科':'精神科', '精神衛生':'精神科',
   '社區':'社區', '社區護理':'社區',
-  '綜合實習':'綜合實習', '綜合_選習':'綜合實習', '綜合選習':'綜合實習', '選習':'綜合實習',
+  '綜合實習':'綜合實習', '綜合_選習':'綜合實習', '綜合選習':'綜合實習', '選習':'綜合實習', '臨床選習':'綜合實習',
 };
 function normalizeUnit(raw){
   const t = (raw||'').trim();
   return UNIT_ALIAS[t] || t;
 }
 
-const RUBRIC = [
+// 前後測（PrePost）用：直接輸入 0-100 分數，不使用等級量表
+function isPrePost(evidence){ return evidence==='PrePost'; }
+
+// EPA 用：5 級信賴程度量表（維持原設計）
+const EPA_RUBRIC = [
   {lv:'l1',label:'Level1 需完全指導',desc:'完全無法獨立執行，需帶教老師全程協助與指導。'},
   {lv:'l2',label:'Level2 需大量協助',desc:'僅能完成部分步驟，關鍵決策與操作仍需大量協助。'},
   {lv:'l3',label:'Level3 可部分獨立完成',desc:'能在監督下獨立完成大部分流程，符合本階段基本要求。'},
   {lv:'l4',label:'Level4 可獨立完成',desc:'能穩定獨立完成，品質良好，符合晉級標準。'},
   {lv:'l5',label:'Level5 可指導他人',desc:'表現優異且能指導、示範予同儕，超出本階段預期。'},
 ];
-const PASS_THRESHOLD = 3;
+const PASS_THRESHOLD_EPA = 3;
+
+// DOPS / Mini-CEX 用：1-9 分制（行為錨定於 1、3、5、7、9 分，2/4/6/8 為中間分數）
+const BARS9_ANCHORS = {
+  1: '遠低於預期 — 需完全指導，無法獨立完成任何步驟。',
+  3: '低於預期 — 僅能完成部分步驟，需大量協助與提示。',
+  5: '達到預期（本階段基本要求）— 能在監督下完成完整流程，操作基本正確。',
+  7: '優於預期 — 能穩定獨立完成，品質良好。',
+  9: '遠優於預期 — 表現優異，能指導他人示範。',
+};
+const BARS9_INDEX = {1:0, 3:1, 5:2, 7:3, 9:4}; // 對應技術項目自訂 rubric 陣列（5 筆）的索引
+
+// 共通評核項目（依院內 DOPS/Mini-CEX 稽核表原文，建一次、每次評核 DOPS/Mini-CEX 時提醒使用，不逐項技術重複建立）
+const COMMON_CHECKLIST = [
+  '病人辨識與取得同意：執行前以病人全名、出生年月日並核對手圈完成雙重身分辨識；向病人（家屬）清楚說明本項技術之原因/目的並取得回應同意。',
+  '疼痛評估與處置：執行過程中若病人表情愁苦、皺眉、哭泣或表達疼痛不適，應進行疼痛評估，必要時暫停再評估後續執行。',
+  '尋求協助：執行遇困難時（如找不到定位、器材染污、操作卡關等）應主動尋求協助；尋求支援前宜先向病人/家屬解說。',
+  '與病人溝通之技巧：以病人/家屬可理解的語言互動並回應提問，避免只用專業術語，並注意病人反應。',
+  '顧及病人感受/專業儀容：儀容整齊並佩戴識別證、自我介紹並稱謂病人、語氣態度親切有禮、維護病人隱私與安全。',
+  '整體表現（Global Rating）：以上共通項目與本技術專屬項目皆達「合乎標準」為通過，其中多項達「表現優良」則視為熟練不需提醒。',
+];
+function commonChecklistHtml(){
+  return '<b style="color:var(--acc)">📋 共通評核提醒（依院內稽核表，每次 DOPS/Mini-CEX 皆適用）</b><br>' +
+    COMMON_CHECKLIST.map((c,i)=>(i+1)+'. '+c).join('<br>');
+}
+const PASS_THRESHOLD_9 = 5;
 const COHORTS = ['115年7月'];
 
 /* ---------- FIREBASE CONFIG ----------
@@ -549,13 +628,251 @@ const DB_PATH = 'nd_sn_shared_db_v1';
 let DB = null;
 
 function seedTechniques(){
-  const list = [];
-  Object.keys(PHASES).forEach(unit=>{
-    CORE_COMPETENCIES.forEach(c=>{
-      list.push({id: unit+'-'+c.code, unit, compCode:c.code, name:c.name, desc:c.desc, method:EVIDENCE_MAP[c.code]});
-    });
-  });
-  return list;
+  // 每個項目可帶 rubric（5 個等級的專屬評分規準文字，取代通用規準）與 targetLevel（該項目的通過門檻，未填則用全域 PASS_THRESHOLD）
+  const raw = [
+    // ===== 基本護理實習 =====
+    { unit:'基本護理', method:'DOPS', name:'給藥', compCode:'C1', desc:'依醫囑正確執行給藥，落實五對原則。', rubric:[
+      '對給藥步驟、五對（病人、藥物、劑量、途徑、時間）核對不熟悉，需帶教老師逐步口頭引導並代為執行。',
+      '能說出五對原則但執行時遺漏或順序錯誤，需老師在旁全程監督並多次提醒。',
+      '能在監督下正確完成五對核對與給藥流程，操作基本正確，符合基本護理階段要求。',
+      '能獨立完成給藥全流程（核對、備藥、給藥、記錄），過程中無安全疑慮。',
+      '能獨立完成並可指導學弟妹五對原則及特殊藥物（如高警訊藥物）注意事項。'
+    ]},
+    { unit:'基本護理', method:'MiniCEX', name:'病人辨識', compCode:'C4', desc:'執行雙重身分核對，落實病人安全。', rubric:[
+      '不清楚三讀五對/身分辨識原則。',
+      '知道原則但執行時常遺漏（如未同時核對床頭卡與腕帶）。',
+      '能在提醒下正確執行雙重身分核對。',
+      '能主動、正確、一致地執行身分辨識於每次護理措施前。',
+      '能指導他人辨識高風險情境（如意識不清、語言隔閡病人）之核對技巧。'
+    ]},
+    { unit:'基本護理', method:'EPA', name:'給藥', compCode:'C1', desc:'基本護理階段給藥信賴程度評核，目標 Level I-II（依實習計畫矩陣）。', targetLevel:2, rubric:null },
+    { unit:'基本護理', method:'EPA', name:'病人辨識', compCode:'C4', desc:'基本護理階段病人辨識信賴程度評核，目標 Level II-III（依實習計畫矩陣）。', targetLevel:3, rubric:null },
+    { unit:'基本護理', method:'PrePost', name:'基本護理前後測', compCode:'', desc:'測驗內容：生命徵象、給藥步驟、壓傷評估、翻身擺位、病人辨識（依實習計畫矩陣）。', rubric:null },
+    { unit:'基本護理', method:'Portfolio', name:'心得反思', compCode:'C5', desc:'學生實習心得反思紀錄（依實習計畫矩陣）。', rubric:null },
+
+    // ===== 內外科護理學實習（1）=====
+    { unit:'內外科（1）', method:'DOPS', name:'管路照護', compCode:'C1', desc:'內外一管路照護（院內正式稽核標準，內容取自引流管護理技術）。', rubric:[
+      '無法操作洗手、擺位、穿戴清潔手套、移除舊敷料紗布膠帶、觀察傷口感染滲液出血或縫合線鬆脫、消毒傷口並固定管路等項目達兩項以上。',
+      '無法操作洗手、擺位、穿戴清潔手套、移除舊敷料紗布膠帶、觀察傷口感染滲液出血或縫合線鬆脫、消毒傷口並固定管路等項目達兩項以上。',
+      '上述項目僅缺漏一項。',
+      '能洗手；協助病人正確擺位；穿戴清潔手套；移去舊的敷料紗布膠帶並去除手套；觀察傷口是否有感染、滲液、出血或縫合線鬆脫情形；消毒皮膚傷口，能正確固定管路。',
+      '上列項目皆熟練不需提醒，且能主動判斷引流管異常（滲液性質改變、脫落風險）並適時處理。'
+    ]},
+    { unit:'內外科（1）', method:'DOPS', name:'靜脈給藥', compCode:'C1', desc:'內外一靜脈留置針穿刺與靜脈給藥（院內正式稽核標準）。', rubric:[
+      '無法操作選擇正確可注射血管、留置針正確插入靜脈、確認回血、注射部位無腫脹發紅、正確固定IC針、確實鬆開止血帶等項目達兩項以上。',
+      '無法操作選擇正確可注射血管、留置針正確插入靜脈、確認回血、注射部位無腫脹發紅、正確固定IC針、確實鬆開止血帶等項目達兩項以上。',
+      '上述項目僅缺漏一項。',
+      '能選擇正確可注射的血管；靜脈留置針能正確插入靜脈中；確認留置針有無回血；注射部位無腫脹發紅；能正確使用OP site固定IC針；能確實鬆開止血帶。',
+      '上列項目皆熟練不需提醒，且能全程遵守無菌原則並注意衛材效期。'
+    ]},
+    { unit:'內外科（1）', method:'MiniCEX', name:'病人評估', compCode:'C3', desc:'依 Gordon 十一項功能性健康型態或系統性方式評估內外科病人整體狀況（依實習計畫矩陣）。', rubric:[
+      '無法系統性收集病人資料，遺漏重要身心社會資訊。',
+      '能收集基本資料但缺乏系統架構，未能整合判斷。',
+      '能依系統性方式收集病人資料並初步排序問題。',
+      '能完整評估病人身心社會需求，正確排序現存與潛在問題。',
+      '能整合評估結果提出個別性照護建議，並指導他人評估重點。'
+    ]},
+    { unit:'內外科（1）', method:'EPA', name:'給藥', compCode:'C1', desc:'內外一給藥信賴程度評核，目標 Level I-II（依實習計畫矩陣）。', targetLevel:2, rubric:null },
+    { unit:'內外科（1）', method:'PrePost', name:'內外一前後測', compCode:'', desc:'測驗內容：跌倒評估、疼痛評估、氧氣治療（依實習計畫矩陣）。', rubric:null },
+    { unit:'內外科（1）', method:'Portfolio', name:'全人評核紀錄單', compCode:'C5', desc:'全人整體性照護評核紀錄（依實習計畫矩陣）。', rubric:null },
+
+    // ===== 內外科護理學實習（2）=====
+    { unit:'內外科（2）', method:'DOPS', name:'氧氣治療', compCode:'C1', desc:'內外二氧氣治療技術（含氧氣設備使用、流量調整、病人監測）。', rubric:[
+      '不熟悉氧氣治療適應症、設備種類與流量調整方式。',
+      '能操作設備但流量設定或病人監測常有錯誤，需持續糾正。',
+      '能在監督下正確設定氧氣流量並監測病人血氧與呼吸狀況。',
+      '能獨立完成氧氣治療設置、監測並適時調整。',
+      '能獨立處理異常狀況（血氧持續下降、設備故障）並指導他人。'
+    ]},
+    { unit:'內外科（2）', method:'DOPS', name:'抽痰', compCode:'C1', desc:'內外二抽痰技術（院內正式稽核標準）。', rubric:[
+      '無法操作最右列項目達兩項以上：擺位評估血氧、抽痰管正確插入鼻道依序進行、無壓力狀態放入抽痰管回抽時旋轉、發生嗆咳意識改變時暫緩安撫不可硬扯、抽痰結束評估血氧並視需要給氧、依年齡調整抽痰壓力等。',
+      '無法操作最右列項目達兩項以上：擺位評估血氧、抽痰管正確插入鼻道依序進行、無壓力狀態放入抽痰管回抽時旋轉、發生嗆咳意識改變時暫緩安撫不可硬扯、抽痰結束評估血氧並視需要給氧、依年齡調整抽痰壓力等。',
+      '上述項目僅缺漏一項。',
+      '能協助病人正確擺位及評估病人血氧濃度；抽痰管能正確插入鼻道依序進行；能正確執行操作技術，放入抽痰管時無壓力狀態，回抽時以旋轉壓力並轉動抽痰管；抽痰過程中發生嗆咳、意識改變等情形，能暫緩抽痰安撫病人，不可硬扯抽痰管；抽痰結束能評估病人血氧濃度並視需要給氧。抽痰壓力：早產兒60～80mmHg、嬰兒60～100mmHg、兒童80～120mmHg、成人120～150mmHg。',
+      '上列項目皆熟練不需提醒，且能正確處理抽痰過程中的意外狀況。'
+    ]},
+    { unit:'內外科（2）', method:'MiniCEX', name:'病人評估', compCode:'C3', desc:'依系統性方式評估內外科病人整體狀況（依實習計畫矩陣）。', rubric:[
+      '無法系統性收集病人資料，遺漏重要身心社會資訊。',
+      '能收集基本資料但缺乏系統架構，未能整合判斷。',
+      '能依系統性方式收集病人資料並初步排序問題。',
+      '能完整評估病人身心社會需求，正確排序現存與潛在問題。',
+      '能整合評估結果提出個別性照護建議，並指導他人評估重點。'
+    ]},
+    { unit:'內外科（2）', method:'EPA', name:'護理交接班', compCode:'C6', desc:'內外二交接班信賴程度評核，目標 Level II-III（正式交班對象含帶教老師，依實習計畫矩陣）。', targetLevel:3, rubric:null },
+    { unit:'內外科（2）', method:'PrePost', name:'內外二前後測', compCode:'', desc:'測驗內容：管路照護（CVC、FOLEY、NG）、感染管制（依實習計畫矩陣）。', rubric:null },
+    { unit:'內外科（2）', method:'Portfolio', name:'全人評核紀錄單', compCode:'C5', desc:'全人整體性照護評核紀錄（依實習計畫矩陣）。', rubric:null },
+
+    // ===== 產科護理學實習 =====
+    { unit:'產科', method:'DOPS', name:'新生兒洗澡', compCode:'C1', desc:'新生兒沐浴、臍帶護理與穿著（院內正式稽核標準）。', rubric:[
+      '未依正確秤重、擺位包裹、洗澡順序與部位（含避免交互感染、男女嬰生殖器清潔要點）、包尿布位置、臍帶護理等步驟執行，缺漏達兩項以上。',
+      '未依正確秤重、擺位包裹、洗澡順序與部位（含避免交互感染、男女嬰生殖器清潔要點）、包尿布位置、臍帶護理等步驟執行，缺漏達兩項以上。',
+      '上述項目僅缺漏一項。',
+      '能正確秤體重（禁止將嬰兒單獨留置於磅秤上離開處理其他事務）；協助嬰兒正確擺位及包裹；洗澡步驟及部位正確（檢視皮膚→眼睛由內向外擦洗避免交互感染→鼻→耳→頭頸→身體，清洗外生殖器時男嬰陰莖包皮要洗淨、女嬰會陰部不可上下來回擦洗→肛門→擦乾，先穿尿布再穿衣服）；尿布應包裹於臍部以下；執行臍帶護理（消毒順序先75%再95%酒精）；正確穿著衣服。',
+      '上列項目皆熟練不需提醒，並能主動觀察嬰兒不適徵象給予安撫。'
+    ]},
+    { unit:'產科', method:'MiniCEX', name:'哺乳衛教', compCode:'C2', desc:'指導產婦正確哺乳姿勢與擠乳/含乳技巧。', rubric:[
+      '對哺乳姿勢、含乳技巧等基本知識不足。',
+      '能講解基本步驟但缺乏個別化指導與示範。',
+      '能示範正確哺乳姿勢並說明常見問題（脹奶、乳頭破皮）。',
+      '能依產婦個別狀況調整指導方式並確認產婦理解與操作。',
+      '能處理特殊哺乳困難情境並指導他人。'
+    ]},
+    { unit:'產科', method:'PrePost', name:'產科前後測', compCode:'', desc:'測驗內容：會陰評估、惡露評估、宮底評估、四段式觸診、FHB（依實習計畫矩陣）。', rubric:null },
+    { unit:'產科', method:'Portfolio', name:'全人評核', compCode:'C5', desc:'全人整體性照護評核（依實習計畫矩陣）。', rubric:null },
+
+    // ===== 精神衛生／精神科護理學實習 =====
+    { unit:'精神科', method:'DOPS', name:'約束', compCode:'C4', desc:'依規範評估並執行保護性約束（含約束前準備、期間照護、約束後處置；院內正式稽核標準）。', rubric:[
+      '無法正確操作各類約束用品、約束鬆緊度、除去可能造成傷害的配件、執行約束前安檢等，達兩項以上未通過。',
+      '無法正確操作各類約束用品、約束鬆緊度、除去可能造成傷害的配件、執行約束前安檢等，達兩項以上未通過。',
+      '上述項目經提醒才可達成，或僅缺漏一項。',
+      '約束前準備：能操作各類約束用品，能正確執行約束鬆緊度，除去工作人員身上可能造成傷害的配件，執行約束前安檢。約束期間照護：能進一步評估及滿足生理需求（排泄、進食、維持血循溫暖），能打開保護室擴音及監視系統，能定時探視病人觀察精神症狀。約束後處置：關監視器、清潔保護室及約束帶，正確洗手、正確記載護理記錄及執行記帳。病人情緒激動出現破壞行為時，能進行情緒行為評估並告知主治醫師討論針劑使用，給予針劑後監測生命徵象。',
+      '無需提醒且能主動完成約束全流程，並能主動判斷當時情勢而主動尋求支援；隨時與主治醫師討論病人在保護室內情形。'
+    ]},
+    { unit:'精神科', method:'DOPS', name:'給藥', compCode:'C1', desc:'依醫囑正確執行精神科給藥並觀察服藥反應與副作用。', rubric:[
+      '對給藥步驟、五對核對不熟悉，需帶教老師逐步口頭引導並代為執行。',
+      '能說出五對原則但執行時遺漏或順序錯誤，需老師在旁全程監督並多次提醒。',
+      '能在監督下正確完成五對核對與給藥流程，並能初步觀察病人服藥後反應。',
+      '能獨立完成給藥全流程並正確觀察、記錄精神科藥物常見副作用（如錐體外徑症候群）。',
+      '能獨立完成並可指導學弟妹精神科用藥安全與副作用觀察重點。'
+    ]},
+    { unit:'精神科', method:'MiniCEX', name:'病人評估', compCode:'C3', desc:'評估精神科病人精神狀態與風險（依實習計畫矩陣）。', rubric:[
+      '不熟悉精神狀態檢查（MSE）基本項目。',
+      '能詢問基本問題但無法系統性整理評估結果。',
+      '能在監督下完成基本精神狀態評估並記錄。',
+      '能獨立完成評估並正確辨識自傷/傷人風險徵象。',
+      '能處理複雜個案評估並指導他人評估技巧。'
+    ]},
+    { unit:'精神科', method:'PrePost', name:'精神科前後測', compCode:'', desc:'測驗內容：精神科用藥、溝通技巧（依實習計畫矩陣）。', rubric:null },
+    { unit:'精神科', method:'Portfolio', name:'全人評核', compCode:'C5', desc:'全人整體性照護評核（依實習計畫矩陣）。', rubric:null },
+
+    // ===== 兒科護理學實習 =====
+    { unit:'兒科', method:'DOPS', name:'給藥', compCode:'C1', desc:'依醫囑正確執行兒科給藥（含劑量換算）。', rubric:[
+      '對給藥步驟、五對核對及兒科劑量換算不熟悉，需帶教老師逐步口頭引導並代為執行。',
+      '能說出五對原則但劑量換算或執行時遺漏，需老師在旁全程監督並多次提醒。',
+      '能在監督下正確完成五對核對、劑量換算與給藥流程。',
+      '能獨立完成兒科給藥全流程（含劑量換算、核對、給藥、記錄），過程中無安全疑慮。',
+      '能獨立完成並可指導學弟妹兒科特殊劑量換算與給藥注意事項。'
+    ]},
+    { unit:'兒科', method:'MiniCEX', name:'預防注射', compCode:'C1', desc:'執行兒童預防注射並衛教家長（依實習計畫矩陣）。', rubric:[
+      '不熟悉預防注射時程、禁忌症與衛教內容。',
+      '能說出基本注射時程但衛教內容簡略。',
+      '能在監督下正確執行預防注射並說明基本注意事項。',
+      '能獨立完成預防注射，並個別化衛教家長注射後照護與副作用觀察。',
+      '能處理特殊個案（過敏史、發燒）並指導他人預防注射衛教技巧。'
+    ]},
+    { unit:'兒科', method:'PrePost', name:'兒科前後測', compCode:'', desc:'測驗內容：兒童發展、預防注射（依實習計畫矩陣）。', rubric:null },
+    { unit:'兒科', method:'Portfolio', name:'全人評核', compCode:'C5', desc:'全人整體性照護評核（依實習計畫矩陣）。', rubric:null },
+
+    // ===== 綜合護理學實習／臨床選習 =====
+    { unit:'綜合實習', method:'DOPS', name:'專科性技術（請依實習單位調整項目名稱）', compCode:'', desc:'依學生所在選習單位（如OR、ICU、ER等）指定該科別代表性技術一項，評核者可自行調整項目名稱與說明；下方亦提供多項院內正式技術卡可直接選用。', rubric:null },
+    { unit:'綜合實習', method:'DOPS', name:'給藥', compCode:'C1', desc:'選習階段給藥技術（依實習計畫矩陣，各專科單位皆通用）。', rubric:[
+      '對給藥步驟、五對核對不熟悉，需帶教老師逐步口頭引導並代為執行。',
+      '能說出五對原則但執行時遺漏或順序錯誤，需老師在旁全程監督並多次提醒。',
+      '能在監督下正確完成五對核對與給藥流程，操作基本正確。',
+      '能獨立完成給藥全流程（核對、備藥、給藥、記錄），過程中無安全疑慮。',
+      '能獨立完成並可指導學弟妹五對原則及特殊藥物注意事項。'
+    ]},
+    { unit:'綜合實習', method:'MiniCEX', name:'病人衛教', compCode:'C2', desc:'依所在專科單位提供個別化病人衛教（依實習計畫矩陣）。', rubric:[
+      '對相關疾病/技術衛教知識不足，無法向病人說明。',
+      '能照稿念出衛教內容，缺乏個別化與互動。',
+      '能以病人可理解的方式說明衛教基本內容與注意事項。',
+      '能個別化衛教並確認病人/家屬理解程度。',
+      '能因應不同病人特性調整衛教策略並指導他人。'
+    ]},
+    { unit:'綜合實習', method:'EPA', name:'護理交接班', compCode:'C6', desc:'選習階段交接班信賴程度評核，目標 Level II-III（依實習計畫矩陣）。', targetLevel:3, rubric:[
+      '需帶教老師逐步引導才能完成交班，無法間接監督。',
+      '在間接監督下可依 SBAR 完成完整、正確的交接班。',
+      '可完全獨立完成高品質交接班，內容完整無遺漏。〔選習目標等級〕',
+      '可獨立交班並指導他人交班技巧。',
+      '專家等級信賴，可制定或優化單位交接班標準流程。'
+    ]},
+    { unit:'綜合實習', method:'PrePost', name:'選習前後測', compCode:'', desc:'測驗內容：醫護常用縮寫、管路照護、氧氣治療（依實習計畫矩陣）。', rubric:null },
+    { unit:'綜合實習', method:'Portfolio', name:'全人評核', compCode:'C5', desc:'全人整體性照護評核（依實習計畫矩陣）。', rubric:null },
+
+    // ===== 選習專科技術選用庫（院內正式 DOPS 稽核表，依實際輪訓單位挑選使用）=====
+    { unit:'綜合實習', method:'DOPS', name:'氣切護理技術', compCode:'C1', desc:'依醫囑執行氣切造口護理與內外套管更換（院內正式稽核標準）。', rubric:[
+      '無法操作抽痰擺位、清除套管痰液污垢、無菌換藥（Y型紗布置放）、繫帶固定、內外套管處理、造口觀察、氣囊飽和度測試等項目達兩項以上。',
+      '無法操作抽痰擺位、清除套管痰液污垢、無菌換藥（Y型紗布置放）、繫帶固定、內外套管處理、造口觀察、氣囊飽和度測試等項目達兩項以上。',
+      '上述項目僅無法操作達一項；能確認病人1小時內未進食、協助正確擺位、依抽痰技術執行抽痰、清除氣管套管痰液污垢。',
+      '能正確採無菌技術換藥，將無菌Y型紗布置於套管翼下方（切口朝上）並正確繫上頸帶；若為內外套管，能正確取出內管並依有無備用內管處理消毒流程，注意內管取出不超過90分鐘；能觀察造口周圍皮膚有無紅腫熱痛或異常分泌物、出血；若有氣囊者能正確測試氣囊飽和度。',
+      '上列項目皆熟練不需提醒，且能正確判斷並主動處理造口異常情形。'
+    ]},
+    { unit:'綜合實習', method:'DOPS', name:'鼻胃管管灌技術', compCode:'C1', desc:'依醫囑執行鼻胃管灌食（院內正式稽核標準）。', rubric:[
+      '無法操作最右列項目達兩項以上：協助半坐臥式擺位、灌食液溫度38～40.5°C並確認新鮮度、灌食空針抬高30～45公分、灌食時間不少於15～20分鐘、灌食前反折鼻胃管末端防止空氣進入、觀察噁心嘔吐異常應立即停止灌食、灌完以30～50ml溫開水沖洗防阻塞、維持床頭抬高45～60度、每日鼻胃管護理並於交班卡註明更換日期。',
+      '無法操作最右列項目達兩項以上：協助半坐臥式擺位、灌食液溫度38～40.5°C並確認新鮮度、灌食空針抬高30～45公分、灌食時間不少於15～20分鐘、灌食前反折鼻胃管末端防止空氣進入、觀察噁心嘔吐異常應立即停止灌食、灌完以30～50ml溫開水沖洗防阻塞、維持床頭抬高45～60度、每日鼻胃管護理並於交班卡註明更換日期。',
+      '上述項目僅缺漏一項。',
+      '能正確協助病人採半坐臥式擺位；灌食液溫度維持38～40.5°C並注意新鮮度；灌食空針抬高30～45公分、灌食時間不少於15～20分鐘；液體灌完前先反折鼻胃管末端防止空氣進入；過程中注意噁心嘔吐等異常，若有應立即停止灌食；灌完後以30～50ml溫開水沖洗鼻胃管防止阻塞；整理病人單位並維持床頭抬高45～60度至少30分鐘；每天給予鼻胃管護理並在交班卡註明更換起迄日期。',
+      '上列項目皆熟練不需提醒。'
+    ]},
+    { unit:'綜合實習', method:'DOPS', name:'引流管護理技術', compCode:'C1', desc:'執行引流管傷口護理與管路固定（院內正式稽核標準）。', rubric:[
+      '無法操作洗手、擺位、穿戴清潔手套、移除舊敷料紗布膠帶、觀察傷口感染滲液出血或縫合線鬆脫、消毒傷口並固定管路等項目達兩項以上。',
+      '無法操作洗手、擺位、穿戴清潔手套、移除舊敷料紗布膠帶、觀察傷口感染滲液出血或縫合線鬆脫、消毒傷口並固定管路等項目達兩項以上。',
+      '上述項目僅缺漏一項。',
+      '能洗手；協助病人正確擺位；穿戴清潔手套；移去舊的敷料紗布膠帶並去除手套；觀察傷口是否有感染、滲液、出血或縫合線鬆脫情形；消毒皮膚傷口，能正確固定管路。',
+      '上列項目皆熟練不需提醒，且能主動判斷引流管異常並適時處理。'
+    ]},
+    { unit:'綜合實習', method:'DOPS', name:'一般換藥技術', compCode:'C1', desc:'執行一般傷口換藥（院內正式稽核標準）。', rubric:[
+      '無法操作正確擺位、正確消毒、正確選擇使用敷料、正確固定覆蓋傷口等項目達兩項以上。',
+      '無法操作正確擺位、正確消毒、正確選擇使用敷料、正確固定覆蓋傷口等項目達兩項以上。',
+      '上述項目僅缺漏一項。',
+      '能協助病人正確擺位；能正確消毒；能正確選擇使用敷料；能正確固定覆蓋傷口。',
+      '上列項目皆熟練不需提醒，且能依傷口癒合階段調整敷料選擇。'
+    ]},
+    { unit:'綜合實習', method:'DOPS', name:'濕敷換藥技術', compCode:'C1', desc:'執行濕敷換藥並正確穿脫無菌手套（院內正式稽核標準）。', rubric:[
+      '無法操作正確擺位、正確消毒、正確穿脫無菌手套、正確選擇使用敷料（濕紗）、正確固定覆蓋傷口等項目達兩項以上。',
+      '無法操作正確擺位、正確消毒、正確穿脫無菌手套、正確選擇使用敷料（濕紗）、正確固定覆蓋傷口等項目達兩項以上。',
+      '上述項目僅缺漏一項。',
+      '能協助病人正確擺位；能正確消毒；能正確穿脫無菌手套；能正確選擇使用敷料（濕紗）；能正確固定覆蓋傷口。',
+      '上列項目皆熟練不需提醒。'
+    ]},
+    { unit:'綜合實習', method:'DOPS', name:'Port-A給藥', compCode:'C1', desc:'依醫囑執行Port-A植入式導管給藥（院內正式稽核標準）。', rubric:[
+      '無法操作擺位露出Port-A部位、評估皮膚外觀避免重複穿刺、觸摸圓盤定位、彎針垂直插入、反抽回血並沖管、接上IV Set/Heparin lock並固定貼標等項目達兩項以上。',
+      '無法操作擺位露出Port-A部位、評估皮膚外觀避免重複穿刺、觸摸圓盤定位、彎針垂直插入、反抽回血並沖管、接上IV Set/Heparin lock並固定貼標等項目達兩項以上。',
+      '上述項目僅缺漏一項。',
+      '能協助病人仰臥並露出Port-A部位皮膚；正確評估port-A處皮膚外觀避免重複注射；正確觸摸感覺圓盤位置及評估基座無翻轉或移位；置入安全彎針時垂直角度插入至底座；正確反抽直到回血並以生理食鹽水沖管兩次；沖畢後夾緊管路、接上IV Set或Heparin lock並正確固定貼標；反抽無回血時能正確判斷處置。',
+      '上列項目皆熟練不需提醒，全程遵守無菌原則，且能正確處理反抽無回血的異常狀況。'
+    ]},
+    { unit:'綜合實習', method:'DOPS', name:'小量灌腸技術', compCode:'C1', desc:'依醫囑執行小量灌腸（院內正式稽核標準）。', rubric:[
+      '無法操作正確擺位、肛管正確插入深度（3～4吋、7～10公分）、正確銜接灌腸空針並以凡士林潤滑、正確控制灌注高度（離肛門15～20公分）等項目達兩項以上。',
+      '無法操作正確擺位、肛管正確插入深度（3～4吋、7～10公分）、正確銜接灌腸空針並以凡士林潤滑、正確控制灌注高度（離肛門15～20公分）等項目達兩項以上。',
+      '上述項目僅缺漏一項。',
+      '能協助病人正確擺位；肛管能正確插入肛門，插入深度正確（3～4吋、7～10公分）；能正確將肛管與灌腸空針相接，使用少許凡士林潤滑肛管前端約5～10公分處；能正確使溶液慢慢流入腸內，空針高度離肛門約15至20公分。',
+      '上列項目皆熟練不需提醒，並能全程遵守清潔原則注意肛管等術材效期。'
+    ]},
+    { unit:'綜合實習', method:'DOPS', name:'導尿技術', compCode:'C1', desc:'依無菌技術執行導尿管置入及留置導尿護理（院內正式稽核標準）。', rubric:[
+      '無法操作協助擺位、導尿管正確插入尿道口、插入深度正確、留置導尿相關處置（蒸餾水注入水囊、正確放置集尿袋、固定管路）等項目達兩項以上。',
+      '無法操作協助擺位、導尿管正確插入尿道口、插入深度正確、留置導尿相關處置（蒸餾水注入水囊、正確放置集尿袋、固定管路）等項目達兩項以上。',
+      '上述項目僅缺漏一項。',
+      '能協助病人正確擺位；導尿管能正確插入尿道口；導尿管插入尿道深度正確；若為留置導尿：能正確取蒸餾水注入導尿管水囊、能正確放置集尿袋、能正確固定管路。',
+      '上列項目皆熟練不需提醒，全程遵守無菌原則，並能正確處理找不到尿道口等困難情境。'
+    ]},
+    { unit:'綜合實習', method:'DOPS', name:'外科無菌刷手技術', compCode:'C1', desc:'依院內正式時機與步驟執行外科刷手（適用於選習手術室輪訓）。', rubric:[
+      '無法正確操作外科刷手步驟項目達兩項以上。',
+      '無法正確操作外科刷手步驟項目達兩項以上。',
+      '經提醒能以正確方法操作外科刷手步驟。',
+      '能正確執行外科洗手；刷手前能將手上飾品及手錶移除；十指指甲不超過指腹，不可擦拭指甲油；服裝儀容符合標準。',
+      '能正確執行外科刷手步驟不需提醒，且能熟練避免他人染污。'
+    ]},
+    { unit:'綜合實習', method:'DOPS', name:'外科無菌鋪盤技術', compCode:'C1', desc:'依無菌原則執行外科手術鋪盤（適用於選習手術室輪訓）。', rubric:[
+      '未符合右列項目達兩項以上：正確穿戴無菌衣及手套、檢視有效日期、檢視消毒指示帶是否消毒完全、檢視外包裝有無潮濕破損、正確操作鋪盤無菌原則及步驟等。',
+      '未符合右列項目達兩項以上：正確穿戴無菌衣及手套、檢視有效日期、檢視消毒指示帶是否消毒完全、檢視外包裝有無潮濕破損、正確操作鋪盤無菌原則及步驟等。',
+      '以正確方法操作，但上述項目僅缺漏一項。',
+      '能執行外科無菌刷手；正確穿戴無菌衣及手套；正確檢視有效日期；正確檢視消毒辨識測紙是否消毒完全；正確檢視外包裝有無潮濕或破損；能執行外科無菌鋪盤時機並正確操作鋪盤無菌原則及步驟。',
+      '能正確執行外科無菌鋪盤技術及步驟不需提醒，且能顧及無菌區域、主動發現包布器械染污情形。'
+    ]},
+    { unit:'綜合實習', method:'DOPS', name:'手術室紗布、器械及尖銳物計數', compCode:'C4', desc:'依標準流程執行手術中紗布、器械與尖銳物計數（適用於選習手術室輪訓）。', rubric:[
+      '無法正確操作紗布、器械及尖銳物計數步驟達兩項以上。',
+      '無法正確操作紗布、器械及尖銳物計數步驟達兩項以上。',
+      '上述項目僅缺漏一項；若發生計數問題，經提醒可依流程處理。',
+      '能執行紗布、器械及尖銳物計數時機；能正確操作紗布、器械及尖銳物計數無菌原則及步驟；若發生計數問題能依標準作業流程處理。',
+      '能主動且正確執行紗布、器械及尖銳物計數不需提醒，並能主動發現計數有誤而協助搜尋。'
+    ]},
+  ];
+  return raw.map((t,i)=>({
+    id: 'seed-'+i+'-'+t.unit+'-'+t.method+'-'+t.name.replace(/[^\w\u4e00-\u9fa5]/g,''),
+    unit: t.unit, compCode: t.compCode||'', method: t.method, name: t.name, desc: t.desc,
+    rubric: t.rubric || null, targetLevel: t.targetLevel || null,
+  }));
 }
 function defaultDB(){
   return {
@@ -623,8 +940,16 @@ function getAssess(){ return DB.assessments; }
 function getTechniques(){ return DB.techniques; }
 
 function itemsForLevel(level, unit){
-  return getTechniques().filter(t=>t.unit===unit).map(t=>({code:t.id,name:t.name,desc:t.desc,evidence:t.method,compCode:t.compCode}));
+  return getTechniques().filter(t=>t.unit===unit).map(t=>({code:t.id,name:t.name,desc:t.desc,evidence:t.method,compCode:t.compCode,rubric:t.rubric||null,targetLevel:t.targetLevel||null}));
 }
+function passThresholdFor(code){
+  const t = getTechniques().find(x=>x.id===code);
+  if(!t) return PASS_THRESHOLD_9;
+  if(t.targetLevel) return t.targetLevel;
+  if(t.method==='PrePost') return 60;
+  return (t.method==='DOPS' || t.method==='MiniCEX') ? PASS_THRESHOLD_9 : PASS_THRESHOLD_EPA;
+}
+function isBars9(evidence){ return evidence==='DOPS' || evidence==='MiniCEX'; }
 function assessFor(studentId, code){
   return getAssess().find(a=>a.studentId===studentId && a.code===code);
 }
@@ -794,6 +1119,15 @@ function nav(page){
   if(page==='analytics') renderAnalytics();
   if(page==='remind') renderRemind();
   if(page==='admin') renderAdmin();
+  closeSidebar();
+}
+function toggleSidebar(){
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebarOverlay').classList.toggle('show');
+}
+function closeSidebar(){
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('show');
 }
 function backToDetail(){ openStudent(CUR.studentId); }
 function renderAll(){ nav(currentPage()); }
@@ -1054,16 +1388,42 @@ function fillTechniqueSelects(){
   const compSel = document.getElementById('tq-comp');
   compSel.innerHTML = '<option value="">（不指定）</option>' + CORE_COMPETENCIES.map(c=>'<option value="'+c.code+'">'+c.code+' '+c.name+'</option>').join('');
 }
+async function applyLatestCurriculum(){
+  const latest = seedTechniques();
+  let added = 0, updated = 0;
+  latest.forEach(seed=>{
+    const existing = DB.techniques.find(t=>t.unit===seed.unit && t.method===seed.method && t.name===seed.name);
+    if(existing){
+      existing.desc = seed.desc;
+      existing.rubric = seed.rubric;
+      existing.targetLevel = seed.targetLevel;
+      existing.compCode = seed.compCode;
+      updated++;
+    } else {
+      DB.techniques.push(seed);
+      added++;
+    }
+  });
+  await persist();
+  fillTechniqueSelects();
+  renderTechniqueList();
+  document.getElementById('curriculumResult').innerHTML = '<span style="color:var(--acc)">✅ 已套用最新課程設計：新增 '+added+' 項、更新 '+updated+' 項。</span>';
+}
 async function submitTechnique(){
   const unit = document.getElementById('tq-unit').value;
   const method = document.getElementById('tq-method').value;
   const compCode = document.getElementById('tq-comp').value;
   const name = document.getElementById('tq-name').value.trim();
   const desc = document.getElementById('tq-desc').value.trim();
+  const targetLevel = document.getElementById('tq-target').value ? Number(document.getElementById('tq-target').value) : null;
+  const rubricRaw = document.getElementById('tq-rubric').value.split('\n').map(l=>l.trim()).filter(l=>l);
+  const rubric = rubricRaw.length===5 ? rubricRaw : null;
   if(!unit||!method||!name){ alert('請填寫實習科目、評量方法與技術名稱'); return; }
-  DB.techniques.push({id:'tq'+Date.now(), unit, compCode, method, name, desc});
+  if(rubricRaw.length>0 && rubricRaw.length!==5){ alert('自訂評分規準請填滿 5 行（Level1～5），或整欄留空使用系統通用規準'); return; }
+  DB.techniques.push({id:'tq'+Date.now(), unit, compCode, method, name, desc, targetLevel, rubric});
   await persist();
   document.getElementById('tq-name').value=''; document.getElementById('tq-desc').value='';
+  document.getElementById('tq-rubric').value=''; document.getElementById('tq-target').value='';
   renderTechniqueList();
 }
 async function delTechnique(id){
@@ -1079,7 +1439,7 @@ function renderTechniqueList(){
     if(!items.length) return '';
     const rows = items.map(t=>
       '<div class="item-card" style="cursor:default">'+
-        '<div class="item-l"><div class="ec"><span class="evtag ev-'+t.method+'">'+EVIDENCE_LABEL[t.method]+'</span> '+(t.compCode?(' '+t.compCode+' '+(COMP_NAME[t.compCode]||'')):'')+'</div><div class="en">'+t.name+'</div></div>'+
+        '<div class="item-l"><div class="ec"><span class="evtag ev-'+t.method+'">'+EVIDENCE_LABEL[t.method]+'</span> '+(t.compCode?(' '+t.compCode+' '+(COMP_NAME[t.compCode]||'')):'')+(t.targetLevel?' <span style="color:var(--a3)">〔門檻 L'+t.targetLevel+'〕</span>':'')+(t.rubric?' <span style="color:var(--acc)">〔自訂規準〕</span>':'')+'</div><div class="en">'+t.name+'</div></div>'+
         '<button class="btn sm" onclick="delTechnique(\''+t.id+'\')">刪除</button>'+
       '</div>'
     ).join('');
@@ -1093,7 +1453,7 @@ function studentProgress(s){
   const items = itemsForLevel(s.level, s.unit);
   const assess = getAssess().filter(a=>a.studentId===s.id);
   const done = items.filter(it=>assess.find(a=>a.code===it.code));
-  const passed = done.filter(it=>{ const a=assess.find(x=>x.code===it.code); return a && a.score>=PASS_THRESHOLD; });
+  const passed = done.filter(it=>{ const a=assess.find(x=>x.code===it.code); return a && a.score>=passThresholdFor(it.code); });
   return {total:items.length, done:done.length, passed:passed.length};
 }
 function renderDashboard(){
@@ -1155,7 +1515,7 @@ function openStudent(id){
   document.getElementById('itemList').innerHTML = items.length ? items.map(it=>{
     const a = assessFor(id, it.code);
     let badge = '<span class="badge by">未評核</span>';
-    if(a) badge = a.score>=PASS_THRESHOLD ? '<span class="badge bg">通過</span>' : '<span class="badge br">未通過</span>';
+    if(a) badge = a.score>=passThresholdFor(it.code) ? '<span class="badge bg">通過</span>' : '<span class="badge br">未通過</span>';
     const teacherLine = a ? '<div style="font-size:10.5px;color:var(--t3);margin-top:3px">評核老師：'+teacherName(a.attendingId)+(a.date?'（'+a.date+'）':'')+'</div>' : '';
     const sigThumb = a && a.signature ? '<img src="'+a.signature+'" style="height:26px;border:1px solid var(--border);border-radius:4px;background:#fff;margin-top:4px">' : '';
     return '<div class="item-card" onclick="openAssess(\''+id+'\',\''+it.code+'\')">'+
@@ -1179,15 +1539,22 @@ function openAssess(studentId, code){
   document.getElementById('a-item-ev').textContent = EVIDENCE_LABEL[it.evidence];
   document.getElementById('a-item-ev').className = 'evtag ev-'+it.evidence;
   document.getElementById('a-item-desc').textContent = it.desc;
+  const clBox = document.getElementById('commonChecklistBox');
+  if(isBars9(it.evidence)){
+    clBox.innerHTML = commonChecklistHtml();
+    clBox.classList.remove('hidden');
+  } else {
+    clBox.classList.add('hidden');
+  }
   const existing = assessFor(studentId, code);
   document.getElementById('fb').value = existing ? existing.feedback : '';
   if(existing) selectedScore = existing.score;
-  document.getElementById('rubric').innerHTML = RUBRIC.map(r=>
-    '<div class="rubric-row">'+
-      '<div class="rlv '+r.lv+' '+(selectedScore==r.lv.slice(1)?'sel':'')+'" onclick="pickScore(\''+r.lv+'\', this)">'+r.label+'</div>'+
-      '<div class="rdesc"><b>'+r.label+'</b><br>'+r.desc+'</div></div>'
-  ).join('');
-  document.getElementById('resultArea').innerHTML = existing ? resultHtml(existing.score) : '';
+  renderRubricFor(it, selectedScore);
+  if(it.targetLevel){
+    const unitLabel = isBars9(it.evidence) ? (it.targetLevel+' 分') : ('Level '+it.targetLevel);
+    document.getElementById('a-item-desc').innerHTML = it.desc + '　<b style="color:var(--a3)">〔本項目通過門檻：'+unitLabel+'〕</b>';
+  }
+  document.getElementById('resultArea').innerHTML = existing ? resultHtml(existing.score, code) : '';
 
   clearSignature();
   const defaultSigner = currentRole()==='teacher' ? (myTeacherRecord()?myTeacherRecord().name:'') : '';
@@ -1199,9 +1566,40 @@ function openAssess(studentId, code){
   }
   nav('assess');
 }
+function renderRubricFor(it, selectedScore){
+  const box = document.getElementById('rubric');
+  if(isPrePost(it.evidence)){
+    box.innerHTML = '<div class="fg"><label>分數（0–100）</label>'+
+      '<input type="number" min="0" max="100" id="prepost-score" value="'+(selectedScore!=null?selectedScore:'')+'" placeholder="輸入 0-100 分" oninput="selectedScore=Number(this.value)"></div>'+
+      '<div style="font-size:24px;color:var(--t2)">前後測為單次分數登錄；若要記錄前測與後測兩次成績，請分別以「新增紀錄」方式各登錄一次（可於回饋欄註明「前測」或「後測」）。</div>';
+    return;
+  }
+  if(isBars9(it.evidence)){
+    const anchors = [1,3,5,7,9].map(n=>{
+      const idx = BARS9_INDEX[n];
+      const text = (it.rubric && it.rubric[idx]) ? it.rubric[idx] : BARS9_ANCHORS[n];
+      return '<div class="bars9-anchor"><b>'+n+'分</b>　'+text+'</div>';
+    }).join('');
+    const buttons = [1,2,3,4,5,6,7,8,9].map(n=>
+      '<div class="bars9-btn'+(selectedScore===n?' sel':'')+'" onclick="pickScoreNum('+n+', this)">'+n+'</div>'
+    ).join('');
+    box.innerHTML = '<div class="bars9-row">'+buttons+'</div><div>'+anchors+'</div>';
+  } else {
+    box.innerHTML = EPA_RUBRIC.map((r,i)=>
+      '<div class="rubric-row">'+
+        '<div class="rlv '+r.lv+' '+(selectedScore==r.lv.slice(1)?'sel':'')+'" onclick="pickScore(\''+r.lv+'\', this)">'+r.label+'</div>'+
+        '<div class="rdesc"><b>'+r.label+'</b><br>'+(it.rubric && it.rubric[i] ? it.rubric[i] : r.desc)+'</div></div>'
+    ).join('');
+  }
+}
 function pickScore(lv, el){
   selectedScore = parseInt(lv.slice(1));
   document.querySelectorAll('.rlv').forEach(e=>e.classList.remove('sel'));
+  el.classList.add('sel');
+}
+function pickScoreNum(n, el){
+  selectedScore = n;
+  document.querySelectorAll('.bars9-btn').forEach(e=>e.classList.remove('sel'));
   el.classList.add('sel');
 }
 function insertPre(t){ const ta=document.getElementById('fb'); ta.value += (ta.value?'\n':'')+t; }
@@ -1259,15 +1657,29 @@ function getSignatureDataUrl(){
   return sigCanvasEl().toDataURL('image/png');
 }
 
-function resultHtml(score){
-  const rr = RUBRIC.find(r=>r.lv==='l'+score);
+function resultHtml(score, code){
+  const t = code ? getTechniques().find(x=>x.id===code) : null;
+  const threshold = code ? passThresholdFor(code) : PASS_THRESHOLD_9;
+  if(t && t.method==='PrePost'){
+    return score>=threshold
+      ? '<div class="result-box pass">✅ 前後測結果：'+score+' 分（達 '+threshold+' 分及格標準）</div>'
+      : '<div class="result-box fail">⚠️ 前後測結果：'+score+' 分（未達 '+threshold+' 分及格標準）</div>';
+  }
+  if(t && isBars9(t.method)){
+    const scoreLabel = score+' 分';
+    const thresholdLabel = threshold+' 分';
+    return score>=threshold
+      ? '<div class="result-box pass">✅ 評核結果：通過（'+scoreLabel+'，達 '+thresholdLabel+' 通過門檻）</div>'
+      : '<div class="result-box fail">⚠️ 評核結果：未通過（'+scoreLabel+'，未達 '+thresholdLabel+' 通過門檻，建議加強後複評）</div>';
+  }
+  const rr = EPA_RUBRIC.find(r=>r.lv==='l'+score);
   const lvName = rr ? rr.label : ('Level'+score);
-  return score>=PASS_THRESHOLD
-    ? '<div class="result-box pass">✅ Entrustment Decision：通過（'+lvName+'，達 Milestone 晉級標準）</div>'
-    : '<div class="result-box fail">⚠️ Entrustment Decision：未通過（'+lvName+'，未達 Level3 晉級標準，建議加強後複評）</div>';
+  return score>=threshold
+    ? '<div class="result-box pass">✅ Entrustment Decision：通過（'+lvName+'，達 Level '+threshold+' 晉級標準）</div>'
+    : '<div class="result-box fail">⚠️ Entrustment Decision：未通過（'+lvName+'，未達 Level '+threshold+' 晉級標準，建議加強後複評）</div>';
 }
 async function submitAssess(){
-  if(!selectedScore){ alert('請先點選一個評分等級'); return; }
+  if(selectedScore===null || selectedScore===undefined || isNaN(selectedScore)){ alert('請先輸入或點選分數'); return; }
   const role = currentRole();
   const attendingId = role==='teacher' ? (myTeacherRecord()? myTeacherRecord().id : '') : document.getElementById('attSel').value;
   if(!attendingId){ alert('請先選擇評核老師（或確認登入帳號已連結教師資料）'); return; }
@@ -1276,7 +1688,7 @@ async function submitAssess(){
   DB.assessments.push({studentId:CUR.studentId, code:CUR.code, score:selectedScore, feedback:document.getElementById('fb').value.trim(), attendingId, signature, date:new Date().toISOString().slice(0,10)});
   await persist();
   document.getElementById('a-signed-by').textContent = '評核老師：'+teacherName(attendingId)+'（'+todayStr()+'）'+(signature?' ✅ 已簽章':' （未簽章）');
-  document.getElementById('resultArea').innerHTML = resultHtml(selectedScore);
+  document.getElementById('resultArea').innerHTML = resultHtml(selectedScore, CUR.code);
   updateReminderBadge();
 }
 
@@ -1292,7 +1704,7 @@ function renderAnalytics(){
   const assess = getAssess().filter(a=>studentIds.has(a.studentId));
 
   const total = assess.length;
-  const passCount = assess.filter(a=>a.score>=PASS_THRESHOLD).length;
+  const passCount = assess.filter(a=>a.score>=passThresholdFor(a.code)).length;
   const passRate = total ? Math.round(passCount/total*100) : 0;
   const avgLevel = total ? Math.round(assess.reduce((s,a)=>s+a.score,0)/total*10)/10 : 0;
 
@@ -1339,8 +1751,9 @@ function renderAnalytics(){
   // proficiency by method
   const methodLevelSum = {}, methodLevelN = {};
   assess.forEach(a=>{ const t=techniqueOf(a.code); const m=t?t.method:'未知'; methodLevelSum[m]=(methodLevelSum[m]||0)+a.score; methodLevelN[m]=(methodLevelN[m]||0)+1; });
+  const methodMax = {DOPS:9, MiniCEX:9, EPA:5, Portfolio:5};
   document.getElementById('anlMethodLevel').innerHTML = Object.keys(methodLevelN).length
-    ? Object.keys(methodLevelN).map(k=>bar(EVIDENCE_LABEL[k]||k, Math.round(methodLevelSum[k]/methodLevelN[k]*10)/10, 5, 'var(--acc)')).join('')
+    ? Object.keys(methodLevelN).map(k=>bar(EVIDENCE_LABEL[k]||k, Math.round(methodLevelSum[k]/methodLevelN[k]*10)/10, methodMax[k]||9, 'var(--acc)')).join('')
     : '<div style="color:var(--t3);font-size:12px;text-align:center;padding:10px">尚無資料</div>';
 
   // proficiency by technique (top10 by usage, show avg level)
@@ -1349,16 +1762,17 @@ function renderAnalytics(){
         const recs = assess.filter(a=>a.code===code);
         const avg = Math.round(recs.reduce((s,a)=>s+a.score,0)/recs.length*10)/10;
         const t = techniqueOf(code);
-        return bar(t?t.name:code, avg, 5, 'var(--a2)');
+        const max = (t && !isBars9(t.method)) ? 5 : 9;
+        return bar(t?t.name:code, avg, max, 'var(--a2)');
       }).join('')
     : '<div style="color:var(--t3);font-size:12px;text-align:center;padding:10px">尚無資料</div>';
 
-  // level distribution 1-5
-  const levelCounts = {1:0,2:0,3:0,4:0,5:0};
+  // 分數分布（1-9，涵蓋 DOPS/Mini-CEX 1-9 分制與 EPA 1-5 級制）
+  const levelCounts = {1:0,2:0,3:0,4:0,5:0,6:0,7:0,8:0,9:0};
   assess.forEach(a=>{ if(levelCounts[a.score]!==undefined) levelCounts[a.score]++; });
   const maxLv = Math.max(1, ...Object.values(levelCounts));
-  const lvColors = {1:'#ef4444',2:'#f97316',3:'#eab308',4:'#22c55e',5:'#00c9a7'};
-  document.getElementById('anlLevelDist').innerHTML = Object.keys(levelCounts).map(k=>bar('Level '+k, levelCounts[k], maxLv, lvColors[k])).join('');
+  const lvColors = {1:'#ef4444',2:'#f97316',3:'#f97316',4:'#eab308',5:'#eab308',6:'#84cc16',7:'#22c55e',8:'#22c55e',9:'#00c9a7'};
+  document.getElementById('anlLevelDist').innerHTML = Object.keys(levelCounts).map(k=>bar(k+' 分', levelCounts[k], maxLv, lvColors[k])).join('');
 }
 
 /* ---------- STUDENT ROSTER IMPORT (CSV, with forward-fill for merged-cell style sheets) ---------- */
