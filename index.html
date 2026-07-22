@@ -8,6 +8,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root{
   --bg:#F7F1E3;--bg2:#FDFAF3;--bg3:#EFE7D3;--card:#FFFDF7;
@@ -387,12 +388,19 @@ textarea{min-height:70px;resize:vertical}
       <!-- TEACHER MGMT -->
       <div class="subcard active" id="sub-teacher">
         <div class="card">
-          <div class="ct"><span><span class="dot"></span>批次新增老師（例如：病房護理長/督導/臨床實習教師）</span></div>
-          <p style="font-size:11.5px;color:var(--t2);margin-bottom:8px">每行一位，用 Tab 或逗號分隔：<b>工號,姓名,病房/單位,職稱</b>。系統會自動用 工號@s.tmu.edu.tw 當帳號 Email，科目預設為「綜合實習」（用來配對選習學生），可依病房自動連動。</p>
+          <div class="ct"><span><span class="dot"></span>批次上傳老師名單（Excel／CSV 檔案）</span></div>
+          <p style="font-size:24px;color:var(--t2);margin-bottom:8px">直接上傳 .xlsx 或 .csv 檔。支援兩種欄位格式（表頭需符合其一）：<br>
+          ① <b>單位,姓名,email</b>（姓名可包含單位縮寫與職稱前後綴，系統會自動去除，如「ND李秋桂主任」會自動解析成姓名「李秋桂」、職稱「主任」）<br>
+          ② <b>工號,姓名,病房,職稱</b>（email 會自動用 工號@s.tmu.edu.tw 產生）</p>
+          <input type="file" id="teacherFile" accept=".xlsx,.xls,.csv" onchange="handleTeacherFile(event)">
+          <button class="btn" style="margin-top:8px" onclick="rematchAllStudents()">🔄 重新自動配對所有學生（依病房/學校）</button>
+          <div id="bulkTeacherResult" style="margin-top:8px;font-size:24px"></div>
+        </div>
+        <div class="card">
+          <div class="ct"><span><span class="dot"></span>批次貼上老師名單（文字）</span></div>
+          <p style="font-size:24px;color:var(--t2);margin-bottom:8px">每行一位，用 Tab 或逗號分隔：<b>工號,姓名,病房/單位,職稱</b>。系統會自動用 工號@s.tmu.edu.tw 當帳號 Email，科目預設為「綜合實習」（用來配對選習學生），可依病房自動連動。</p>
           <textarea id="bulk-teachers" rows="6" placeholder="08284,鄭莉珍,OR,護理長&#10;08392,余汝婉,208病房,副護理長"></textarea>
           <button class="btn pri" style="margin-top:8px" onclick="submitBulkTeachers()">＋ 批次新增</button>
-          <button class="btn" style="margin-top:8px" onclick="rematchAllStudents()">🔄 重新自動配對所有學生（依病房/學校）</button>
-          <div id="bulkTeacherResult" style="margin-top:8px;font-size:12px"></div>
         </div>
         <div class="card">
           <div class="ct"><span><span class="dot"></span>新建單一老師</span></div>
@@ -412,31 +420,34 @@ textarea{min-height:70px;resize:vertical}
           <button class="btn pri" onclick="submitTeacher()">＋ 新建老師</button>
         </div>
         <div class="card">
-          <div class="ct"><span><span class="dot"></span>老師名單</span></div>
+          <div class="ct" style="display:flex;justify-content:space-between;align-items:center">
+            <span><span class="dot"></span>老師名單</span>
+            <button class="btn sm" style="background:var(--danger);border-color:var(--danger);color:#fff" onclick="deleteSelectedTeachers()">🗑️ 刪除已勾選</button>
+          </div>
           <div class="tablewrap"><table>
-            <thead><tr><th>姓名</th><th>學校</th><th>負責科目</th><th>Email</th><th>實習期間</th><th>分派學生數</th><th></th></tr></thead>
+            <thead><tr><th><input type="checkbox" onclick="toggleAllTeacherCheckboxes(this)"></th><th>姓名</th><th>學校</th><th>負責科目</th><th>Email</th><th>實習期間</th><th>分派學生數</th><th></th></tr></thead>
             <tbody id="teacherTbl"></tbody>
           </table></div>
         </div>
         <div class="card">
           <div class="ct"><span><span class="dot"></span>手動配對學生給老師</span></div>
-          <p style="font-size:11.5px;color:var(--t2);margin-bottom:10px">選擇一位老師，再勾選要配對給這位老師的學生（可複選，按住 Ctrl / Cmd 多選）。儲存後會覆蓋這位老師目前的學生名單。</p>
+          <p style="font-size:24px;color:var(--t2);margin-bottom:10px">選擇一位老師，再勾選要配對給這位老師的學生（可複選，按住 Ctrl / Cmd 多選）。儲存後會覆蓋這位老師目前的學生名單。</p>
           <div class="g2">
             <div class="fg"><label>選擇老師</label><select id="assign-teacher" onchange="loadAssignStudents()"></select></div>
             <div class="fg"><label>選擇學生（可複選）</label><select id="assign-students" multiple size="8"></select></div>
           </div>
           <button class="btn pri" onclick="saveTeacherAssignment()">💾 儲存配對</button>
-          <span id="assignResult" style="margin-left:10px;font-size:12px;color:var(--acc)"></span>
+          <span id="assignResult" style="margin-left:10px;font-size:24px;color:var(--acc)"></span>
         </div>
       </div>
 
       <!-- STUDENT MGMT -->
       <div class="subcard" id="sub-student">
         <div class="card">
-          <div class="ct"><span><span class="dot"></span>匯入名冊（CSV）</span></div>
-          <p style="font-size:11.5px;color:var(--t2);margin-bottom:10px">欄位需求（表頭需一致）：學校,學制,組別,單位,學號,姓名,指導老師,實習(起),實習(迄)　——同一梯次的學校/學制/組別/指導老師/起訖日期可以只填第一列，下面留空會自動延用上一列。</p>
-          <input type="file" id="importCsvFile" accept=".csv" onchange="handleImportCsv(event)">
-          <div id="importResult" style="margin-top:8px;font-size:12px"></div>
+          <div class="ct"><span><span class="dot"></span>批次上傳學生名冊（Excel／CSV）</span></div>
+          <p style="font-size:24px;color:var(--t2);margin-bottom:10px">欄位需求（表頭需一致）：學校,學制,組別,單位,學號,姓名,指導老師,實習(起),實習(迄)　——同一梯次的學校/學制/組別/指導老師/起訖日期可以只填第一列，下面留空會自動延用上一列。支援 .xlsx 或 .csv。</p>
+          <input type="file" id="importCsvFile" accept=".xlsx,.xls,.csv" onchange="handleImportCsv(event)">
+          <div id="importResult" style="margin-top:8px;font-size:24px"></div>
         </div>
         <div class="card">
           <div class="ct"><span><span class="dot"></span>新建學生</span></div>
@@ -1244,6 +1255,28 @@ async function submitTeacher(){
 }
 
 /* ---------- BULK TEACHER IMPORT (ward-based, for 選習/comprehensive-practicum head nurses) ---------- */
+const KNOWN_TITLES = ['副護理長','代護理長','護理長','副主任','主任','督導','臨床實習教師']; // 依長度排序，避免「主任」誤吃「副主任」
+function splitNameTitle(raw, unitHint){
+  let s = (raw||'').trim();
+  if(unitHint && s.startsWith(unitHint)) s = s.slice(unitHint.length);
+  let title = '';
+  for(const t of KNOWN_TITLES){
+    if(s.endsWith(t)){ title = t; s = s.slice(0, -t.length); break; }
+  }
+  return { name: s.trim(), title };
+}
+function addTeacherRow(row){
+  // row: {empId?, email?, name, ward, title}
+  const email = row.email || (row.empId ? row.empId+'@s.tmu.edu.tw' : '');
+  if(!row.name || !email) return 'skip';
+  if(DB.teachers.some(t=>t.email.toLowerCase()===email.toLowerCase())) return 'skip';
+  DB.teachers.push({
+    id: 't'+Date.now()+Math.random().toString(36).slice(2,6),
+    school:'雙和醫院', subject:'綜合實習', name:row.name, email,
+    ward: row.ward||'', title: row.title||'', periodStart:'', periodEnd:'', studentIds:[]
+  });
+  return 'added';
+}
 async function submitBulkTeachers(){
   const raw = document.getElementById('bulk-teachers').value.trim();
   if(!raw){ alert('請先貼上老師名單'); return; }
@@ -1253,20 +1286,80 @@ async function submitBulkTeachers(){
     const parts = line.split(/\t|,/).map(p=>p.trim());
     if(parts.length < 3){ skipped++; return; }
     const [empId, name, ward, title] = parts;
-    if(!empId || !name){ skipped++; return; }
-    const email = empId + '@s.tmu.edu.tw';
-    if(DB.teachers.some(t=>t.email.toLowerCase()===email.toLowerCase())){ skipped++; return; }
-    const newId = 't'+Date.now()+Math.random().toString(36).slice(2,6);
-    DB.teachers.push({
-      id:newId, school:'雙和醫院', subject:'綜合實習', name, email,
-      ward: ward||'', title: title||'', periodStart:'', periodEnd:'', studentIds:[]
-    });
-    added++;
+    if(addTeacherRow({empId, name, ward, title})==='added') added++; else skipped++;
   });
   await persist();
   document.getElementById('bulk-teachers').value = '';
   renderTeacherTbl(); initAttSel();
   document.getElementById('bulkTeacherResult').innerHTML = '<span style="color:var(--acc)">✅ 已新增 '+added+' 位老師'+(skipped?'，略過 '+skipped+' 行（格式不完整或 Email 已存在）':'')+'</span>';
+  await rematchAllStudents(true);
+}
+function sheetToRows(file){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onload = (e)=>{
+      try{
+        if(/\.csv$/i.test(file.name)){
+          const rows = parseCsvSimple(e.target.result);
+          if(rows.length===0) return resolve([]);
+          const headers = rows[0].map(h=>h.trim());
+          resolve(rows.slice(1).map(r=>{
+            const obj = {};
+            headers.forEach((h,i)=>obj[h]=(r[i]||'').trim());
+            return obj;
+          }));
+        } else {
+          const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
+          const ws = wb.Sheets[wb.SheetNames[0]];
+          const json = XLSX.utils.sheet_to_json(ws, {defval:''});
+          resolve(json.map(r=>{
+            const obj = {};
+            Object.keys(r).forEach(k=>obj[k.trim()] = String(r[k]).trim());
+            return obj;
+          }));
+        }
+      }catch(err){ reject(err); }
+    };
+    reader.onerror = reject;
+    if(/\.csv$/i.test(file.name)) reader.readAsText(file, 'utf-8');
+    else reader.readAsArrayBuffer(file);
+  });
+}
+async function handleTeacherFile(evt){
+  const file = evt.target.files[0];
+  if(!file) return;
+  let rows;
+  try{ rows = await sheetToRows(file); }
+  catch(e){ document.getElementById('bulkTeacherResult').innerHTML = '<span style="color:var(--danger)">檔案讀取失敗：'+e.message+'</span>'; return; }
+  if(!rows.length){ document.getElementById('bulkTeacherResult').innerHTML = '<span style="color:var(--danger)">找不到資料列</span>'; return; }
+
+  const headers = Object.keys(rows[0]);
+  const hasEmailFormat = headers.includes('單位') && headers.includes('姓名') && headers.includes('email');
+  const hasIdFormat = headers.includes('工號') && headers.includes('姓名');
+
+  let added = 0, skipped = 0;
+  rows.forEach(r=>{
+    if(hasEmailFormat){
+      const unit = (r['單位']||'').trim();
+      const { name, title } = splitNameTitle(r['姓名'], unit);
+      const email = (r['email']||r['Email']||'').trim();
+      if(addTeacherRow({ name, ward: unit, title, email })==='added') added++; else skipped++;
+    } else if(hasIdFormat){
+      const empId = (r['工號']||'').trim();
+      const { name, title } = splitNameTitle(r['姓名'], r['病房']||r['單位']||'');
+      const ward = (r['病房']||r['單位']||'').trim();
+      const finalTitle = title || (r['職稱']||'').trim();
+      if(addTeacherRow({ empId, name, ward, title: finalTitle })==='added') added++; else skipped++;
+    } else {
+      skipped++;
+    }
+  });
+  await persist();
+  evt.target.value = '';
+  renderTeacherTbl(); initAttSel();
+  document.getElementById('bulkTeacherResult').innerHTML = hasEmailFormat || hasIdFormat
+    ? '<span style="color:var(--acc)">✅ 已新增 '+added+' 位老師'+(skipped?'，略過 '+skipped+' 行（Email 已存在或資料不完整）':'')+'</span>'
+    : '<span style="color:var(--danger)">找不到「單位,姓名,email」或「工號,姓名,病房,職稱」的欄位表頭，請確認檔案格式。</span>';
   await rematchAllStudents(true);
 }
 async function rematchAllStudents(silent){
@@ -1331,10 +1424,23 @@ function renderTeacherTbl(){
   sel.innerHTML = getAllStudents().map(s=>'<option value="'+s.id+'">'+s.name+'（'+s.school+'）</option>').join('');
   const teachers = getTeachers();
   document.getElementById('teacherTbl').innerHTML = teachers.length ? teachers.map(t=>
-    '<tr><td>'+t.name+(t.title?' <span style="color:var(--t3);font-size:10px">'+t.title+'</span>':'')+'</td><td>'+t.school+(t.ward?'<br><span style="font-size:10px;color:var(--t3)">'+t.ward+'</span>':'')+'</td><td>'+(PHASES[t.subject]||t.subject)+'</td><td>'+t.email+'</td>'+
+    '<tr><td><input type="checkbox" class="teacher-check" value="'+t.id+'"></td><td>'+t.name+(t.title?' <span style="color:var(--t3);font-size:20px">'+t.title+'</span>':'')+'</td><td>'+t.school+(t.ward?'<br><span style="font-size:20px;color:var(--t3)">'+t.ward+'</span>':'')+'</td><td>'+(PHASES[t.subject]||t.subject)+'</td><td>'+t.email+'</td>'+
     '<td>'+(t.periodStart||'—')+' ~ '+(t.periodEnd||'—')+'</td><td>'+(t.studentIds||[]).length+'</td>'+
     '<td><button class="btn sm" onclick="delTeacher(\''+t.id+'\')">刪除</button></td></tr>'
-  ).join('') : '<tr><td colspan="7" style="text-align:center;color:var(--t3);padding:14px">尚無老師資料</td></tr>';
+  ).join('') : '<tr><td colspan="8" style="text-align:center;color:var(--t3);padding:14px">尚無老師資料</td></tr>';
+}
+function toggleAllTeacherCheckboxes(master){
+  document.querySelectorAll('.teacher-check').forEach(cb=>cb.checked = master.checked);
+}
+async function deleteSelectedTeachers(){
+  const ids = Array.from(document.querySelectorAll('.teacher-check:checked')).map(cb=>cb.value);
+  if(ids.length===0){ alert('請先勾選要刪除的老師'); return; }
+  if(!confirm('確定刪除已勾選的 '+ids.length+' 位老師？（已連動的學生會變回未配對，不會被刪除）')) return;
+  const idSet = new Set(ids);
+  DB.teachers = DB.teachers.filter(t=>!idSet.has(t.id));
+  DB.students.forEach(s=>{ if(idSet.has(s.teacherId)) s.teacherId=''; });
+  await persist();
+  renderTeacherTbl(); initAttSel(); renderStudentAdminTbl(); renderStudents(); renderDashboard();
 }
 
 /* ---------- STUDENT MGMT (admin form) ---------- */
@@ -1840,8 +1946,21 @@ const FORWARD_FILL_COLS = ['來函文號','創稿文號','實習合約','實習(
 async function handleImportCsv(evt){
   const file = evt.target.files[0];
   if(!file) return;
-  const text = await file.text();
-  const rows = parseCsvSimple(text);
+  let rows;
+  try{
+    if(/\.csv$/i.test(file.name)){
+      const text = await file.text();
+      rows = parseCsvSimple(text);
+    } else {
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(new Uint8Array(buf), {type:'array'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:''}).map(r=>r.map(c=>String(c)));
+    }
+  }catch(e){
+    document.getElementById('importResult').innerHTML = '<span style="color:var(--danger)">檔案讀取失敗：'+e.message+'</span>';
+    return;
+  }
   if(rows.length < 2){ document.getElementById('importResult').innerHTML = '<span style="color:var(--danger)">找不到資料列</span>'; return; }
   const headers = rows[0].map(h=>h.trim());
   const idx = (name)=>headers.indexOf(name);
