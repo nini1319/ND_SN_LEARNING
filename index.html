@@ -480,8 +480,9 @@ textarea{min-height:70px;resize:vertical}
       <div class="subcard" id="sub-technique">
         <div class="card">
           <div class="ct"><span><span class="dot"></span>套用最新課程設計</span></div>
-          <p style="font-size:24px;color:var(--t2);margin-bottom:8px">依「基護→DOPS 給藥/生命徵象測量、MiniCEX 病人辨識」「內外科→DOPS 給藥/生命徵象測量/抽痰、MiniCEX 疾病衛教/交接班」「產科」「兒科」「精神科」「選習（含 EPA 給藥/交接班，目標 Level 2）」的標準課程設計，安全套用到系統（已存在的同科目/同方法/同名稱項目只會更新內容，不會刪除，也不會影響已完成的評核紀錄）。</p>
+          <p style="font-size:24px;color:var(--t2);margin-bottom:8px">依實習計畫矩陣（基護／內外一／內外二／產科／兒科／精神科／選習）套用標準課程設計，安全套用到系統（已存在的同科目/同方法/同名稱項目只會更新內容，不會刪除，也不會影響已完成的評核紀錄）。</p>
           <button class="btn pri" onclick="applyLatestCurriculum()">✅ 套用最新課程設計</button>
+          <button class="btn" style="margin-left:8px" onclick="cleanupLegacyTechniques()">🧹 清除舊版殘留技術項目（C1-C8通用項目）</button>
           <div id="curriculumResult" style="margin-top:8px;font-size:24px"></div>
         </div>
         <div class="card">
@@ -647,8 +648,6 @@ function seedTechniques(){
     ]},
     { unit:'基本護理', method:'EPA', name:'給藥', compCode:'C1', desc:'基本護理階段給藥信賴程度評核，目標 Level I-II（依實習計畫矩陣）。', targetLevel:2, rubric:null },
     { unit:'基本護理', method:'EPA', name:'病人辨識', compCode:'C4', desc:'基本護理階段病人辨識信賴程度評核，目標 Level II-III（依實習計畫矩陣）。', targetLevel:3, rubric:null },
-    { unit:'基本護理', method:'PrePost', name:'基本護理前後測', compCode:'', desc:'測驗內容：生命徵象、給藥步驟、壓傷評估、翻身擺位、病人辨識（依實習計畫矩陣）。', rubric:null },
-    { unit:'基本護理', method:'Portfolio', name:'心得反思', compCode:'C5', desc:'學生實習心得反思紀錄（依實習計畫矩陣）。', rubric:null },
 
     // ===== 內外科護理學實習（1）=====
     { unit:'內外科（1）', method:'DOPS', name:'管路照護', compCode:'C1', desc:'內外一管路照護（院內正式稽核標準，內容取自引流管護理技術）。', rubric:[
@@ -1408,6 +1407,24 @@ async function applyLatestCurriculum(){
   fillTechniqueSelects();
   renderTechniqueList();
   document.getElementById('curriculumResult').innerHTML = '<span style="color:var(--acc)">✅ 已套用最新課程設計：新增 '+added+' 項、更新 '+updated+' 項。</span>';
+}
+async function cleanupLegacyTechniques(){
+  // 舊版（最早期）系統會用「八大核心能力」名稱本身當作技術名稱自動產生 56 個通用項目
+  // （例如技術名稱直接叫「臨床照護能力」「溝通能力」...），這裡精準辨識並移除這些殘留項目
+  const legacyNames = new Set(CORE_COMPETENCIES.map(c=>c.name));
+  const before = DB.techniques.length;
+  const legacyIds = new Set(DB.techniques.filter(t=>legacyNames.has(t.name)).map(t=>t.id));
+  if(legacyIds.size===0){
+    document.getElementById('curriculumResult').innerHTML = '<span style="color:var(--t2)">沒有找到殘留的舊版通用技術項目。</span>';
+    return;
+  }
+  if(!confirm('找到 '+legacyIds.size+' 項舊版殘留技術項目（如「臨床照護能力」「溝通能力」等 8 大核心能力通用項目），確定要清除嗎？（若有學生已針對這些項目登錄過評核紀錄，該筆紀錄會保留但技術名稱會顯示為「技術未指定」）')) return;
+  DB.techniques = DB.techniques.filter(t=>!legacyIds.has(t.id));
+  await persist();
+  fillTechniqueSelects();
+  renderTechniqueList();
+  renderDashboard();
+  document.getElementById('curriculumResult').innerHTML = '<span style="color:var(--acc)">✅ 已清除 '+(before-DB.techniques.length)+' 項舊版殘留技術項目。</span>';
 }
 async function submitTechnique(){
   const unit = document.getElementById('tq-unit').value;
