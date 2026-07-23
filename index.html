@@ -1007,6 +1007,11 @@ function myTeacherRecord(){
   if(!currentUser) return null;
   return getTeachers().find(t=>t.email && t.email.toLowerCase()===currentUser.email.toLowerCase()) || null;
 }
+// 同一人可能身兼多個病房（多筆老師紀錄共用同一個 email），登入時要合併看到所有病房的學生
+function myTeacherRecords(){
+  if(!currentUser) return [];
+  return getTeachers().filter(t=>t.email && t.email.toLowerCase()===currentUser.email.toLowerCase());
+}
 function currentRole(){
   if(!FIREBASE_CONFIGURED) return 'admin'; // no backend configured yet → full preview mode, no login required
   if(!currentUser) return 'school'; // not logged in → guest / partner-school browsing
@@ -1027,8 +1032,8 @@ function scopedStudents(){
     return sc ? all.filter(s=>s.school===sc) : [];
   }
   if(role==='teacher'){
-    const t = myTeacherRecord();
-    return t ? all.filter(s=>s.teacherId===t.id) : [];
+    const myIds = new Set(myTeacherRecords().map(t=>t.id));
+    return myIds.size ? all.filter(s=>myIds.has(s.teacherId)) : [];
   }
   if(role==='unlinked') return [];
   return all; // admin
@@ -1278,11 +1283,14 @@ function addTeacherRow(row){
   // row: {empId?, email?, name, ward, title}
   const email = row.email || (row.empId ? row.empId+'@s.tmu.edu.tw' : '');
   if(!row.name || !email) return 'skip';
-  if(DB.teachers.some(t=>t.email.toLowerCase()===email.toLowerCase())) return 'skip';
+  const ward = (row.ward||'').trim();
+  // 同一個 email（同一個人）可能身兼多個病房護理長，因此改用「email + 病房」判斷重複，
+  // 而不是只看 email，才不會漏掉身兼兩個病房的護理長的第二個病房。
+  if(DB.teachers.some(t=>t.email.toLowerCase()===email.toLowerCase() && (t.ward||'').trim()===ward)) return 'skip';
   DB.teachers.push({
-    id: 't'+Date.now()+Math.random().toString(36).slice(2,6),
+    id: 't'+Date.now()+Math.random().toString(36).slice(2,6)+Math.random().toString(36).slice(2,4),
     school:'雙和醫院', subject:'綜合實習', name:row.name, email,
-    ward: row.ward||'', title: row.title||'', periodStart:'', periodEnd:'', studentIds:[]
+    ward, title: row.title||'', periodStart:'', periodEnd:'', studentIds:[]
   });
   return 'added';
 }
@@ -1861,7 +1869,13 @@ function resultHtml(score, code){
 async function submitAssess(){
   if(selectedScore===null || selectedScore===undefined || isNaN(selectedScore)){ alert('請先輸入或點選分數'); return; }
   const role = currentRole();
-  const attendingId = role==='teacher' ? (myTeacherRecord()? myTeacherRecord().id : '') : document.getElementById('attSel').value;
+  let attendingId = document.getElementById('attSel').value;
+  if(role==='teacher'){
+    const myRecs = myTeacherRecords();
+    const student = getAllStudents().find(x=>x.id===CUR.studentId);
+    const matchByWard = student ? myRecs.find(t=>t.ward && student.ward && t.ward.trim()===student.ward.trim()) : null;
+    attendingId = (matchByWard || myRecs[0] || {}).id || '';
+  }
   if(!attendingId){ alert('請先選擇評核老師（或確認登入帳號已連結教師資料）'); return; }
   const signature = getSignatureDataUrl();
   DB.assessments = DB.assessments.filter(a=>!(a.studentId===CUR.studentId && a.code===CUR.code));
