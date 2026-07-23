@@ -472,9 +472,12 @@ textarea{min-height:70px;resize:vertical}
           <button class="btn pri" onclick="submitStudent()">＋ 新建學生</button>
         </div>
         <div class="card">
-          <div class="ct"><span><span class="dot"></span>學生名單</span></div>
+          <div class="ct" style="display:flex;justify-content:space-between;align-items:center">
+            <span><span class="dot"></span>學生名單</span>
+            <button class="btn sm" style="background:var(--danger);border-color:var(--danger);color:#fff" onclick="deleteSelectedStudents()">🗑️ 刪除已勾選</button>
+          </div>
           <div class="tablewrap"><table>
-            <thead><tr><th>學號</th><th>姓名</th><th>學校</th><th>學制 / 年級</th><th>實習科目</th><th>病房</th><th>指導老師</th><th></th></tr></thead>
+            <thead><tr><th><input type="checkbox" onclick="toggleAllStudentCheckboxes(this)"></th><th>學號</th><th>姓名</th><th>學校</th><th>學制 / 年級</th><th>實習科目</th><th>病房</th><th>指導老師</th><th></th></tr></thead>
             <tbody id="studentAdminTbl"></tbody>
           </table></div>
         </div>
@@ -1479,11 +1482,25 @@ function renderStudentAdminTbl(){
   fillTeacherOptionsForStudent();
   const students = getAllStudents();
   document.getElementById('studentAdminTbl').innerHTML = students.length ? students.map(s=>
-    '<tr><td>'+(s.no||'—')+'</td><td>'+s.name+'</td><td>'+(s.school||'—')+'</td><td>'+s.level+'</td><td>'+(PHASES[s.unit]||s.unit)+'</td>'+
-    '<td style="font-size:11px;color:var(--t2)">'+(s.ward||'—')+'</td>'+
-    '<td>'+(s.teacherId? teacherName(s.teacherId) : (s.mentorName ? s.mentorName+' <span style="color:var(--t3);font-size:10px">(未連動帳號)</span>' : '<span style="color:var(--t3)">未配對</span>'))+'</td>'+
+    '<tr><td><input type="checkbox" class="student-check" value="'+s.id+'"></td><td>'+(s.no||'—')+'</td><td>'+s.name+'</td><td>'+(s.school||'—')+'</td><td>'+s.level+'</td><td>'+(PHASES[s.unit]||s.unit)+'</td>'+
+    '<td style="font-size:20px;color:var(--t2)">'+(s.ward||'—')+'</td>'+
+    '<td>'+(s.teacherId? teacherName(s.teacherId) : (s.mentorName ? s.mentorName+' <span style="color:var(--t3);font-size:20px">(未連動帳號)</span>' : '<span style="color:var(--t3)">未配對</span>'))+'</td>'+
     '<td><button class="btn sm" onclick="delStudent(\''+s.id+'\')">刪除</button></td></tr>'
-  ).join('') : '<tr><td colspan="8" style="text-align:center;color:var(--t3);padding:14px">尚無學生資料</td></tr>';
+  ).join('') : '<tr><td colspan="9" style="text-align:center;color:var(--t3);padding:14px">尚無學生資料</td></tr>';
+}
+function toggleAllStudentCheckboxes(master){
+  document.querySelectorAll('.student-check').forEach(cb=>cb.checked = master.checked);
+}
+async function deleteSelectedStudents(){
+  const ids = Array.from(document.querySelectorAll('.student-check:checked')).map(cb=>cb.value);
+  if(ids.length===0){ alert('請先勾選要刪除的學生'); return; }
+  if(!confirm('確定刪除已勾選的 '+ids.length+' 位學生？其評核紀錄也將一併刪除，此動作無法復原。')) return;
+  const idSet = new Set(ids);
+  DB.students = DB.students.filter(s=>!idSet.has(s.id));
+  DB.assessments = DB.assessments.filter(a=>!idSet.has(a.studentId));
+  DB.teachers.forEach(t=>{ if(t.studentIds) t.studentIds = t.studentIds.filter(sid=>!idSet.has(sid)); });
+  await persist();
+  renderStudentAdminTbl(); renderStudents(); renderDashboard(); renderTeacherTbl();
 }
 
 /* ---------- SCHOOL MGMT ---------- */
