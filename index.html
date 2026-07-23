@@ -616,8 +616,22 @@ const COMMON_CHECKLIST = [
   '顧及病人感受/專業儀容：儀容整齊並佩戴識別證、自我介紹並稱謂病人、語氣態度親切有禮、維護病人隱私與安全。',
   '整體表現（Global Rating）：以上共通項目與本技術專屬項目皆達「合乎標準」為通過，其中多項達「表現優良」則視為熟練不需提醒。',
 ];
-function commonChecklistHtml(){
-  return '<b style="color:var(--acc)">📋 共通評核提醒（依院內稽核表，每次 DOPS/Mini-CEX 皆適用）</b><br>' +
+// Mini-CEX 共通評核構面（依院內 Mini-CEX 稽核表，7 大構面每次評核皆適用，建一次不逐項技術重複建立）
+const MINICEX_COMMON_CHECKLIST = [
+  '溝通技巧：執行前辨識病人並說明目的、取得同意；以開放性問題詢問並聆聽，必要時再澄清病人敘述，避免專業術語、只用病人能了解的言詞。',
+  '身體評估：評估前後洗手；依需要告知下一步驟；依正確程序執行身體檢查，過程中留意病人反應與舒適度。',
+  '護理技術/處置：能正確操作執行相關技術或處置，並告知注意事項；能說出適應症、禁忌症與可能合併症。',
+  '衛教指導：說明指導內容與注意事項，並確認病人/家屬理解程度（回覆示教），提供個別性指導，必要時提供多元衛教方式（單張、手冊、多媒體等）。',
+  '臨床判斷：能依病人當下需求與情境判斷並做出正確處置或指導，衛教/處置有先後次序與邏輯；能察覺異常狀況並視狀況尋求支援。',
+  '組織能力：有系統性完成準備工作，具時效性，能依病情與情境安排先後順序，並妥善處理突發狀況。',
+  '同理關懷/專業儀容：佩戴識別證、儀容整齊、自我介紹並尊稱病人；語氣態度親切有禮，具同理心並注意維護病人安全與隱私。',
+];
+function commonChecklistHtml(evidence){
+  if(evidence==='MiniCEX'){
+    return '<b style="color:var(--acc)">📋 Mini-CEX 共通評核構面（依院內稽核表，每次評核皆適用）</b><br>' +
+      MINICEX_COMMON_CHECKLIST.map((c,i)=>(i+1)+'. '+c).join('<br>');
+  }
+  return '<b style="color:var(--acc)">📋 共通評核提醒（依院內稽核表，每次 DOPS 皆適用）</b><br>' +
     COMMON_CHECKLIST.map((c,i)=>(i+1)+'. '+c).join('<br>');
 }
 const PASS_THRESHOLD_9 = 5;
@@ -892,6 +906,22 @@ function seedTechniques(){
       '能執行紗布、器械及尖銳物計數時機；能正確操作紗布、器械及尖銳物計數無菌原則及步驟；若發生計數問題能依標準作業流程處理。',
       '能主動且正確執行紗布、器械及尖銳物計數不需提醒，並能主動發現計數有誤而協助搜尋。'
     ]},
+
+    // ===== 選習專科情境選用庫（院內正式 Mini-CEX 稽核表，依實際輪訓單位挑選使用）
+    // 7 大構面（溝通技巧／身體評估／護理技術／衛教指導／臨床判斷／組織能力／同理關懷）已統一列在
+    // 「Mini-CEX 共通評核構面」提醒區塊，此處僅列情境專屬重點，rubric 使用系統通用 1-9 分制錨點 =====
+    { unit:'綜合實習', method:'MiniCEX', name:'床上身體清潔', compCode:'C2', desc:'協助臥床病人執行身體清潔與翻身，含皮膚完整性評估、翻身技巧與電擊貼片處理、護理指導（依院內正式 Mini-CEX 稽核標準）。', rubric:null },
+    { unit:'綜合實習', method:'MiniCEX', name:'備輸血評分操作定義', compCode:'C1', desc:'執行備血/輸血前評估與衛教，含核對病歷輸血過敏史、評估輸液管路是否通暢、告知輸血過程可能不良反應（依院內正式 Mini-CEX 稽核標準）。', rubric:null },
+    { unit:'綜合實習', method:'MiniCEX', name:'成人意識評估', compCode:'C3', desc:'執行成人意識/精神狀態評估（依院內正式 Mini-CEX 稽核標準）。', rubric:null },
+    { unit:'綜合實習', method:'MiniCEX', name:'（經直腸攝護腺切除）術前準備護理', compCode:'C1', desc:'執行手術前準備護理，含辨識病人與手術部位、禁食時間與飲食注意事項說明、手術衣穿著指導、飾品/活動假牙/指甲油確認移除、術前準備與交班（依院內正式 Mini-CEX 稽核標準）。', rubric:null },
+    { unit:'綜合實習', method:'MiniCEX', name:'胸腔物理治療', compCode:'C1', desc:'執行胸腔物理治療技術與衛教（依院內正式 Mini-CEX 稽核標準）。', rubric:null },
+    { unit:'綜合實習', method:'MiniCEX', name:'兒童意識評估', compCode:'C3', desc:'執行兒童意識/發展評估（依院內正式 Mini-CEX 稽核標準）。', rubric:null },
+    { unit:'綜合實習', method:'MiniCEX', name:'門診病人入院護理評估', compCode:'C3', desc:'執行門診病人入院護理評估（依院內正式 Mini-CEX 稽核標準）。', rubric:null },
+    { unit:'綜合實習', method:'MiniCEX', name:'衛教相關（疾病衛教）', compCode:'C2', desc:'針對病人疾病狀況提供個別性衛教指導（依院內正式 Mini-CEX 稽核標準）。', rubric:null },
+    { unit:'綜合實習', method:'MiniCEX', name:'預防暴力評估處置正確性', compCode:'C4', desc:'評估病人暴力風險並執行正確預防處置（依院內正式 Mini-CEX 稽核標準）。', rubric:null },
+    { unit:'綜合實習', method:'MiniCEX', name:'預防精神科病人自殺之評估與照護', compCode:'C4', desc:'會談前說明目的、傾聽病人想法與感受、評估自殺風險並提供適當照護（依院內正式 Mini-CEX 稽核標準）。', rubric:null },
+    { unit:'綜合實習', method:'MiniCEX', name:'精神科活動帶領完整性', compCode:'C2', desc:'帶領精神科團體活動，含說明活動目的、團體中/後澄清病人問題並適當回應（依院內正式 Mini-CEX 稽核標準）。', rubric:null },
+    { unit:'綜合實習', method:'MiniCEX', name:'手術部位辨識（病人辨識）及Time Out', compCode:'C4', desc:'執行手術部位辨識與 Time Out 流程，含核對手術部位辨識圖與手術同意書、清醒病人採開放性提問確認（依院內正式 Mini-CEX 稽核標準）。', rubric:null },
   ];
   return raw.map((t,i)=>({
     id: 'seed-'+i+'-'+t.unit+'-'+t.method+'-'+t.name.replace(/[^\w\u4e00-\u9fa5]/g,''),
@@ -1729,7 +1759,7 @@ function openAssess(studentId, code){
   document.getElementById('a-item-desc').textContent = it.desc;
   const clBox = document.getElementById('commonChecklistBox');
   if(isBars9(it.evidence)){
-    clBox.innerHTML = commonChecklistHtml();
+    clBox.innerHTML = commonChecklistHtml(it.evidence);
     clBox.classList.remove('hidden');
   } else {
     clBox.classList.add('hidden');
