@@ -516,12 +516,17 @@ textarea{min-height:70px;resize:vertical}
           <div class="g2">
             <div class="fg"><label>實習科目 / Phase<span style="color:var(--danger)">*</span></label><select id="tq-unit"></select></div>
             <div class="fg"><label>評量方法<span style="color:var(--danger)">*</span></label>
-              <select id="tq-method"><option value="DOPS">DOPS</option><option value="MiniCEX">Mini-CEX</option><option value="EPA">EPA</option><option value="Portfolio">Portfolio</option></select>
+              <select id="tq-method" onchange="fillTemplateSelect()"><option value="DOPS">DOPS</option><option value="MiniCEX">Mini-CEX</option><option value="EPA">EPA</option><option value="Portfolio">Portfolio</option></select>
             </div>
+          </div>
+          <div class="fg"><label>從資料庫挑選範本（依院內稽核表建立，選了會自動帶出項目說明與評分規準；也可以選「自訂」自己輸入）</label>
+            <select id="tq-template" onchange="applyTemplate()"></select>
+          </div>
+          <div class="g2">
             <div class="fg"><label>對應核心能力</label><select id="tq-comp"></select></div>
             <div class="fg"><label>技術 / 項目名稱<span style="color:var(--danger)">*</span></label><input id="tq-name" placeholder="例：導尿管留置"></div>
-            <div class="fg"><label>通過門檻等級（選填，預設 Level 3）</label>
-              <select id="tq-target"><option value="">預設（Level 3）</option><option value="1">Level 1</option><option value="2">Level 2</option><option value="3">Level 3</option><option value="4">Level 4</option><option value="5">Level 5</option></select>
+            <div class="fg"><label>通過門檻等級（選填，預設 Level 3；DOPS/Mini-CEX 系統會另以 1-9 分制評分，此門檻對應分數）</label>
+              <select id="tq-target"><option value="">預設（Level 3 / 5分）</option><option value="1">Level 1 / 1分</option><option value="2">Level 2 / 3分</option><option value="3">Level 3 / 5分</option><option value="4">Level 4 / 7分</option><option value="5">Level 5 / 9分</option></select>
             </div>
           </div>
           <div class="fg"><label>項目說明（評核時會顯示給老師參考）</label><textarea id="tq-desc" placeholder="能正確評估並執行…"></textarea></div>
@@ -1571,6 +1576,7 @@ function fillTechniqueSelects(){
   if(Object.keys(PHASES).includes(cur)) unitSel.value = cur;
   const compSel = document.getElementById('tq-comp');
   compSel.innerHTML = '<option value="">（不指定）</option>' + CORE_COMPETENCIES.map(c=>'<option value="'+c.code+'">'+c.code+' '+c.name+'</option>').join('');
+  fillTemplateSelect();
 }
 async function applyLatestCurriculum(){
   const latest = seedTechniques();
@@ -1593,6 +1599,40 @@ async function applyLatestCurriculum(){
   renderTechniqueList();
   document.getElementById('curriculumResult').innerHTML = '<span style="color:var(--acc)">✅ 已套用最新課程設計：新增 '+added+' 項、更新 '+updated+' 項。</span>';
 }
+/* ---------- TECHNIQUE TEMPLATE LIBRARY (資料庫下拉選單，選了自動帶出項目說明與評分規準) ---------- */
+function getTemplateLibrary(){
+  const all = seedTechniques();
+  const seen = new Set();
+  const list = [];
+  all.forEach(t=>{
+    const key = t.method+'|'+t.name;
+    if(seen.has(key)) return;
+    seen.add(key);
+    list.push(t);
+  });
+  return list;
+}
+function fillTemplateSelect(){
+  const method = document.getElementById('tq-method').value;
+  const sel = document.getElementById('tq-template');
+  const templates = getTemplateLibrary().filter(t=>t.method===method);
+  sel.innerHTML = '<option value="">— 自訂（手動輸入名稱與規準）—</option>' +
+    templates.map((t,i)=>'<option value="'+i+'">'+t.name+'</option>').join('');
+  sel.dataset.method = method;
+}
+function applyTemplate(){
+  const method = document.getElementById('tq-method').value;
+  const templates = getTemplateLibrary().filter(t=>t.method===method);
+  const idx = document.getElementById('tq-template').value;
+  if(idx===''){ return; } // 自訂：不動使用者已輸入的內容
+  const t = templates[Number(idx)];
+  if(!t) return;
+  document.getElementById('tq-name').value = t.name;
+  document.getElementById('tq-desc').value = t.desc || '';
+  document.getElementById('tq-rubric').value = t.rubric ? t.rubric.join('\n') : '';
+  document.getElementById('tq-comp').value = t.compCode || '';
+  document.getElementById('tq-target').value = t.targetLevel ? String(t.targetLevel) : '';
+}
 async function submitTechnique(){
   const unit = document.getElementById('tq-unit').value;
   const method = document.getElementById('tq-method').value;
@@ -1608,6 +1648,7 @@ async function submitTechnique(){
   await persist();
   document.getElementById('tq-name').value=''; document.getElementById('tq-desc').value='';
   document.getElementById('tq-rubric').value=''; document.getElementById('tq-target').value='';
+  document.getElementById('tq-template').value='';
   renderTechniqueList();
 }
 async function delTechnique(id){
