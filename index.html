@@ -1343,22 +1343,25 @@ async function handleTeacherFile(evt){
   if(!rows.length){ document.getElementById('bulkTeacherResult').innerHTML = '<span style="color:var(--danger)">找不到資料列</span>'; return; }
 
   const headers = Object.keys(rows[0]);
-  const hasEmailFormat = headers.includes('單位') && headers.includes('姓名') && headers.includes('email');
+  const UNIT_COL_ALIASES = ['單位','實習單位','病房','病房/單位'];
+  const findCol = (aliases)=>aliases.find(a=>headers.includes(a));
+  const unitCol = findCol(UNIT_COL_ALIASES);
+  const hasEmailFormat = !!unitCol && headers.includes('姓名') && (headers.includes('email')||headers.includes('Email'));
   const hasIdFormat = headers.includes('工號') && headers.includes('姓名');
 
   let added = 0, skipped = 0;
   rows.forEach(r=>{
     if(hasEmailFormat){
-      const unit = (r['單位']||'').trim();
+      const unit = (r[unitCol]||'').trim();
       const { name, title } = splitNameTitle(r['姓名'], unit);
       const email = (r['email']||r['Email']||'').trim();
       if(addTeacherRow({ name, ward: unit, title, email })==='added') added++; else skipped++;
     } else if(hasIdFormat){
       const empId = (r['工號']||'').trim();
-      const { name, title } = splitNameTitle(r['姓名'], r['病房']||r['單位']||'');
-      const ward = (r['病房']||r['單位']||'').trim();
+      const wardVal = (r[unitCol]||r['病房']||r['單位']||'').trim();
+      const { name, title } = splitNameTitle(r['姓名'], wardVal);
       const finalTitle = title || (r['職稱']||'').trim();
-      if(addTeacherRow({ empId, name, ward, title: finalTitle })==='added') added++; else skipped++;
+      if(addTeacherRow({ empId, name, ward: wardVal, title: finalTitle })==='added') added++; else skipped++;
     } else {
       skipped++;
     }
@@ -1368,7 +1371,7 @@ async function handleTeacherFile(evt){
   renderTeacherTbl(); initAttSel();
   document.getElementById('bulkTeacherResult').innerHTML = hasEmailFormat || hasIdFormat
     ? '<span style="color:var(--acc)">✅ 已新增 '+added+' 位老師'+(skipped?'，略過 '+skipped+' 行（Email 已存在或資料不完整）':'')+'</span>'
-    : '<span style="color:var(--danger)">找不到「單位,姓名,email」或「工號,姓名,病房,職稱」的欄位表頭，請確認檔案格式。</span>';
+    : '<span style="color:var(--danger)">找不到「單位/實習單位,姓名,email」或「工號,姓名,病房,職稱」的欄位表頭，請確認檔案格式。</span>';
   await rematchAllStudents(true);
 }
 async function rematchAllStudents(silent){
@@ -1995,13 +1998,30 @@ async function handleImportCsv(evt){
   }
   if(rows.length < 2){ document.getElementById('importResult').innerHTML = '<span style="color:var(--danger)">找不到資料列</span>'; return; }
   const headers = rows[0].map(h=>h.trim());
-  const idx = (name)=>headers.indexOf(name);
+  // 欄位別名對照：同一個邏輯欄位，允許表頭用不同的實際名稱
+  const HEADER_ALIASES = {
+    '學校': ['學校','實習學校','就讀學校'],
+    '學制': ['學制','就讀學制'],
+    '組別': ['組別','實習科目','實習梯次組別','Phase'],
+    '單位': ['單位','實習單位','病房','病房/單位','實習病房'],
+    '指導老師': ['指導老師','帶教老師','負責老師'],
+    '實習(起)': ['實習(起)','實習起','實習日期(起)','起訖日期(起)'],
+    '實習(迄)': ['實習(迄)','實習迄','實習日期(迄)','起訖日期(迄)'],
+    '姓名': ['姓名','學生姓名'],
+    '學號': ['學號','學生學號'],
+  };
+  const idx = (logicalName)=>{
+    const aliases = HEADER_ALIASES[logicalName] || [logicalName];
+    for(const a of aliases){ const i = headers.indexOf(a); if(i>=0) return i; }
+    return -1;
+  };
+  const FORWARD_FILL_LOGICAL = ['學校','學制','組別','指導老師','實習(起)','實習(迄)'];
   const last = {}; // carries forward group-level columns
   let added = 0, skipped = 0;
   for(let r=1;r<rows.length;r++){
     const cells = rows[r];
-    const get = (name)=>{ const i = idx(name); return i>=0 ? (cells[i]||'').trim() : ''; };
-    FORWARD_FILL_COLS.forEach(col=>{
+    const get = (logicalName)=>{ const i = idx(logicalName); return i>=0 ? (cells[i]||'').trim() : ''; };
+    FORWARD_FILL_LOGICAL.forEach(col=>{
       const v = get(col);
       if(v) last[col] = v;
     });
