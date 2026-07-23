@@ -254,7 +254,7 @@ textarea{min-height:70px;resize:vertical}
       <div class="card">
         <div class="ct"><span><span class="dot"></span>學生成效總覽</span></div>
         <div class="tablewrap"><table>
-          <thead><tr><th>學生</th><th>學校</th><th>學制 / 年級</th><th>已評核 / 應評核項目</th><th>完成度</th><th>通過率</th><th></th></tr></thead>
+          <thead><tr><th>學生</th><th>學校</th><th>學制 / 年級</th><th>病房</th><th>已評核 / 應評核項目</th><th>完成度</th><th>通過率</th><th></th></tr></thead>
           <tbody id="dashTbl"></tbody>
         </table></div>
       </div>
@@ -263,9 +263,15 @@ textarea{min-height:70px;resize:vertical}
     <!-- STUDENTS LIST -->
     <div class="page" id="page-students">
       <div class="card">
-        <div class="ct"><span><span class="dot"></span>選擇要評核的學生</span></div>
+        <div class="ct" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+          <span><span class="dot"></span>選擇要評核的學生</span>
+          <div style="display:flex;align-items:center;gap:6px">
+            <label style="margin:0;font-size:20px;color:var(--t3)">依病房篩選</label>
+            <select id="wardFilterSel" onchange="renderStudents()" style="font-size:20px;padding:4px 8px"><option value="">全部病房</option></select>
+          </div>
+        </div>
         <div class="tablewrap"><table>
-          <thead><tr><th>學生</th><th>學校</th><th>學制 / 年級</th><th>實習科目</th><th>待評核項目</th><th></th></tr></thead>
+          <thead><tr><th>學生</th><th>學校</th><th>學制 / 年級</th><th>實習科目</th><th>病房</th><th>待評核項目</th><th></th></tr></thead>
           <tbody id="studentsTbl"></tbody>
         </table></div>
       </div>
@@ -1624,17 +1630,25 @@ function renderDashboard(){
       '<td>'+displayStudentName(s)+'</td>'+
       '<td>'+(s.school||'—')+'</td>'+
       '<td><span class="lvtag">'+s.level+'</span><br><span style="font-size:10px;color:var(--t3)">'+(PHASES[s.unit]||s.unit)+'</span></td>'+
+      '<td style="font-size:20px;color:var(--t2)">'+(s.ward||'—')+'</td>'+
       '<td>'+p.done+' / '+p.total+'<div class="pbar"><i style="width:'+pct+'%"></i></div></td>'+
       '<td>'+pct+'%</td>'+
       '<td>'+(passRate===null?'—':(passRate>=100?'<span class="badge bg">'+passRate+'%</span>':'<span class="badge by">'+passRate+'%</span>'))+'</td>'+
       '<td>'+(clickable?'<button class="btn">評核 →</button>':'')+'</td></tr>';
-  }).join('') : '<tr><td colspan="7" style="text-align:center;color:var(--t3);padding:16px">'+(currentRole()==='school'?'請選擇學校，或此學校目前尚無學生資料':'此梯次目前尚無學生資料，請至「管理平台」新增學生')+'</td></tr>';
+  }).join('') : '<tr><td colspan="8" style="text-align:center;color:var(--t3);padding:16px">'+(currentRole()==='school'?'請選擇學校，或此學校目前尚無學生資料':'此梯次目前尚無學生資料，請至「管理平台」新增學生')+'</td></tr>';
   updateReminderBadge();
 }
 
 /* ---------- STUDENTS LIST ---------- */
 function renderStudents(){
-  const students = scopedStudents();
+  let students = scopedStudents();
+  const wardSel = document.getElementById('wardFilterSel');
+  const wards = Array.from(new Set(getStudents().map(s=>s.ward).filter(w=>w))).sort();
+  const curWard = wardSel.value;
+  wardSel.innerHTML = '<option value="">全部病房</option>' + wards.map(w=>'<option value="'+w+'">'+w+'</option>').join('');
+  if(wards.includes(curWard)) wardSel.value = curWard;
+  if(wardSel.value) students = students.filter(s=>s.ward===wardSel.value);
+
   const clickable = ['admin','teacher'].includes(currentRole());
   document.getElementById('studentsTbl').innerHTML = (students.length ? students.map(s=>{
     const p = studentProgress(s);
@@ -1644,9 +1658,10 @@ function renderStudents(){
       '<td>'+(s.school||'—')+'</td>'+
       '<td><span class="lvtag">'+s.level+'</span></td>'+
       '<td>'+(PHASES[s.unit]||s.unit)+'</td>'+
+      '<td style="font-size:20px;color:var(--t2)">'+(s.ward||'—')+'</td>'+
       '<td>'+(remaining>0?'<span class="badge by">尚有 '+remaining+' 項</span>':'<span class="badge bg">已全部完成</span>')+'</td>'+
       '<td>'+(clickable?'<button class="btn pri">開始評核</button>':'')+'</td></tr>';
-  }).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--t3);padding:16px">'+(currentRole()==='school'?'請選擇學校，或此學校目前尚無學生資料':'此梯次尚無學生，請至「管理平台 → 學生管理」新增')+'</td></tr>');
+  }).join('') : '<tr><td colspan="7" style="text-align:center;color:var(--t3);padding:16px">'+(currentRole()==='school'?'請選擇學校，或此學校目前尚無學生資料':'此梯次尚無學生，請至「管理平台 → 學生管理」新增')+'</td></tr>');
 }
 
 /* ---------- STUDENT DETAIL ---------- */
